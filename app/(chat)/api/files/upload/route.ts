@@ -1,4 +1,5 @@
-import { put } from "@vercel/blob";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -51,11 +52,19 @@ export async function POST(request: Request) {
     const fileBuffer = await file.arrayBuffer();
 
     try {
-      const data = await put(`${filename}`, fileBuffer, {
-        access: "public",
-      });
+      // Local file storage instead of Vercel Blob
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadDir, { recursive: true });
 
-      return NextResponse.json(data);
+      // Add timestamp to prevent filename collisions
+      const uniqueFilename = `${Date.now()}-${filename}`;
+      const filePath = path.join(uploadDir, uniqueFilename);
+      await writeFile(filePath, Buffer.from(fileBuffer));
+
+      return NextResponse.json({
+        url: `/uploads/${uniqueFilename}`,
+        pathname: uniqueFilename,
+      });
     } catch (_error) {
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
