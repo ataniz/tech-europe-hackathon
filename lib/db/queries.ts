@@ -20,11 +20,17 @@ import { ChatSDKError } from "../errors";
 import type { AppUsage } from "../usage";
 import { generateUUID } from "../utils";
 import {
+  type Asset,
+  type AssetType,
+  asset,
   type Chat,
+  type ChatStatus,
+  type ChatType,
   chat,
   type DBMessage,
   document,
   message,
+  type ReturnValue,
   type Suggestion,
   stream,
   suggestion,
@@ -134,7 +140,7 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
       return { deletedCount: 0 };
     }
 
-    const chatIds = userChats.map(c => c.id);
+    const chatIds = userChats.map((c) => c.id);
 
     await db.delete(vote).where(inArray(vote.chatId, chatIds));
     await db.delete(message).where(inArray(message.chatId, chatIds));
@@ -588,6 +594,219 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       "bad_request:database",
       "Failed to get stream ids by chat id"
+    );
+  }
+}
+
+// Asset queries
+
+export async function createAsset(params: {
+  chatId: string;
+  type: AssetType;
+  url: string;
+  prompt?: string;
+  filename?: string;
+}): Promise<Asset> {
+  try {
+    const [newAsset] = await db
+      .insert(asset)
+      .values({
+        chatId: params.chatId,
+        type: params.type,
+        url: params.url,
+        prompt: params.prompt,
+        filename: params.filename,
+        createdAt: new Date(),
+      })
+      .returning();
+    return newAsset;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to create asset");
+  }
+}
+
+export async function getAssetById(id: string): Promise<Asset | null> {
+  try {
+    const [selectedAsset] = await db
+      .select()
+      .from(asset)
+      .where(eq(asset.id, id));
+    return selectedAsset ?? null;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get asset by id");
+  }
+}
+
+export async function getAssetsByChatId(chatId: string): Promise<Asset[]> {
+  try {
+    return await db
+      .select()
+      .from(asset)
+      .where(eq(asset.chatId, chatId))
+      .orderBy(asc(asset.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get assets by chat id"
+    );
+  }
+}
+
+export async function getAssetsByIds(ids: string[]): Promise<Asset[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  try {
+    return await db.select().from(asset).where(inArray(asset.id, ids));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get assets by ids"
+    );
+  }
+}
+
+// Branching queries
+
+export async function getChildChats(parentChatId: string): Promise<Chat[]> {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(eq(chat.parentChatId, parentChatId))
+      .orderBy(asc(chat.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get child chats");
+  }
+}
+
+export async function getParentChat(chatId: string): Promise<Chat | null> {
+  try {
+    const [currentChat] = await db
+      .select()
+      .from(chat)
+      .where(eq(chat.id, chatId));
+    if (!currentChat?.parentChatId) {
+      return null;
+    }
+
+    const [parentChat] = await db
+      .select()
+      .from(chat)
+      .where(eq(chat.id, currentChat.parentChatId));
+    return parentChat ?? null;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get parent chat");
+  }
+}
+
+export async function updateChatStatus(
+  chatId: string,
+  status: ChatStatus
+): Promise<void> {
+  try {
+    await db.update(chat).set({ status }).where(eq(chat.id, chatId));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update chat status"
+    );
+  }
+}
+
+export async function updateChatType(
+  chatId: string,
+  chatType: ChatType
+): Promise<void> {
+  try {
+    await db.update(chat).set({ chatType }).where(eq(chat.id, chatId));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update chat type"
+    );
+  }
+}
+
+export async function setChatReturnValue(
+  chatId: string,
+  returnValue: ReturnValue
+): Promise<void> {
+  try {
+    await db.update(chat).set({ returnValue }).where(eq(chat.id, chatId));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to set chat return value"
+    );
+  }
+}
+
+export async function finalizeChildChats(parentChatId: string): Promise<void> {
+  try {
+    await db
+      .update(chat)
+      .set({ status: "finalized" })
+      .where(
+        and(eq(chat.parentChatId, parentChatId), eq(chat.status, "returned"))
+      );
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to finalize child chats"
+    );
+  }
+}
+
+export async function isOrchestratorBlocked(chatId: string): Promise<boolean> {
+  try {
+    const [currentChat] = await db
+      .select()
+      .from(chat)
+      .where(eq(chat.id, chatId));
+
+    if (!currentChat || currentChat.chatType !== "orchestrator") {
+      return false;
+    }
+
+    // Count children that are not yet returned (still active)
+    const [result] = await db
+      .select({ count: count() })
+      .from(chat)
+      .where(and(eq(chat.parentChatId, chatId), eq(chat.status, "active")));
+
+    return (result?.count ?? 0) > 0;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to check if orchestrator is blocked"
+    );
+  }
+}
+
+export async function createSubAgentChat(params: {
+  parentChatId: string;
+  title: string;
+  userId: string;
+}): Promise<Chat> {
+  try {
+    const [newChat] = await db
+      .insert(chat)
+      .values({
+        createdAt: new Date(),
+        title: params.title,
+        userId: params.userId,
+        visibility: "private",
+        parentChatId: params.parentChatId,
+        chatType: "sub-agent",
+        status: "active",
+      })
+      .returning();
+    return newChat;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to create sub-agent chat"
     );
   }
 }

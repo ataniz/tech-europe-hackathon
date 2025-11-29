@@ -25,6 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Get base URL from request for constructing full URLs
+  const url = new URL(request.url);
+  const baseUrl = `${url.protocol}//${url.host}`;
+
   if (request.body === null) {
     return new Response("Request body is empty", { status: 400 });
   }
@@ -62,8 +66,9 @@ export async function POST(request: Request) {
       await writeFile(filePath, Buffer.from(fileBuffer));
 
       return NextResponse.json({
-        url: `/uploads/${uniqueFilename}`,
+        url: `${baseUrl}/uploads/${uniqueFilename}`,
         pathname: uniqueFilename,
+        contentType: file.type,
       });
     } catch (_error) {
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });

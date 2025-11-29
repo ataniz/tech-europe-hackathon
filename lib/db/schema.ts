@@ -13,6 +13,15 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AppUsage } from "../usage";
 
+// Branching types
+export type AssetType = "image" | "video" | "upload";
+export type ChatType = "default" | "orchestrator" | "sub-agent";
+export type ChatStatus = "active" | "returned" | "finalized";
+export type ReturnValue = {
+  assets: string[];
+  summary?: string;
+};
+
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   email: varchar("email", { length: 64 }).notNull(),
@@ -21,18 +30,38 @@ export const user = pgTable("User", {
 
 export type User = InferSelectModel<typeof user>;
 
-export const chat = pgTable("Chat", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  title: text("title").notNull(),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar("visibility", { enum: ["public", "private"] })
-    .notNull()
-    .default("private"),
-  lastContext: jsonb("lastContext").$type<AppUsage | null>(),
-});
+export const chat = pgTable(
+  "Chat",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    createdAt: timestamp("createdAt").notNull(),
+    title: text("title").notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+    visibility: varchar("visibility", { enum: ["public", "private"] })
+      .notNull()
+      .default("private"),
+    lastContext: jsonb("lastContext").$type<AppUsage | null>(),
+    // Branching fields
+    parentChatId: uuid("parentChatId"),
+    chatType: varchar("chatType", {
+      enum: ["default", "orchestrator", "sub-agent"],
+    })
+      .notNull()
+      .default("default"),
+    status: varchar("status", { enum: ["active", "returned", "finalized"] })
+      .notNull()
+      .default("active"),
+    returnValue: jsonb("returnValue").$type<ReturnValue | null>(),
+  },
+  (table) => ({
+    parentChatRef: foreignKey({
+      columns: [table.parentChatId],
+      foreignColumns: [table.id],
+    }),
+  })
+);
 
 export type Chat = InferSelectModel<typeof chat>;
 
@@ -171,3 +200,17 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const asset = pgTable("Asset", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  type: varchar("type", { enum: ["image", "video", "upload"] }).notNull(),
+  url: text("url").notNull(),
+  prompt: text("prompt"),
+  filename: text("filename"),
+  createdAt: timestamp("createdAt").notNull(),
+});
+
+export type Asset = InferSelectModel<typeof asset>;

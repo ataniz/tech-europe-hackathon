@@ -6,8 +6,9 @@ Generated from `PRD.md`
 
 ### Relevant Files
 
-- `lib/db/schema.ts` – Add Asset table, extend Chat table with branching fields
-- `lib/db/queries.ts` – Add asset CRUD queries and branching queries
+- `lib/db/schema.ts` – ✅ Added Asset table, extended Chat table with branching fields (parentChatId, chatType, status, returnValue)
+- `lib/db/queries.ts` – ✅ Added 4 asset queries + 8 branching queries
+- `lib/db/migrations/0008_brief_genesis.sql` – Migration for Phase 1 schema changes
 - `lib/ai/prompts.ts` – Add SUB_AGENT_SYSTEM_PROMPT constant
 - `lib/ai/tools/spawn-sub-agents.ts` – Tool to spawn parallel sub-agent chats
 - `lib/ai/tools/generate-image.ts` – Placeholder tool for Gemini image generation
@@ -31,13 +32,13 @@ Generated from `PRD.md`
 
 ## Tasks
 
-- [ ] 1.0 Data Layer: Schema & Queries
-    - [ ] 1.1 Add Asset table to `lib/db/schema.ts` with fields: id, chatId, type, url, prompt, filename, createdAt
-    - [ ] 1.2 Extend Chat table in `lib/db/schema.ts` with: parentChatId, chatType, status, returnValue
-    - [ ] 1.3 Run `pnpm db:generate` to create migration file
-    - [ ] 1.4 Run `pnpm db:migrate` to apply migration
-    - [ ] 1.5 Add asset queries to `lib/db/queries.ts`: createAsset, getAssetById, getAssetsByChatId, getAssetsByIds
-    - [ ] 1.6 Add branching queries to `lib/db/queries.ts`: getChildChats, getParentChat, updateChatStatus, updateChatType, setChatReturnValue, finalizeChildChats, isOrchestratorBlocked, createSubAgentChat
+- [x] 1.0 Data Layer: Schema & Queries
+    - [x] 1.1 Add Asset table to `lib/db/schema.ts` with fields: id, chatId, type, url, prompt, filename, createdAt
+    - [x] 1.2 Extend Chat table in `lib/db/schema.ts` with: parentChatId, chatType, status, returnValue
+    - [x] 1.3 Run `pnpm db:generate` to create migration file
+    - [x] 1.4 Run `pnpm db:migrate` to apply migration
+    - [x] 1.5 Add asset queries to `lib/db/queries.ts`: createAsset, getAssetById, getAssetsByChatId, getAssetsByIds
+    - [x] 1.6 Add branching queries to `lib/db/queries.ts`: getChildChats, getParentChat, updateChatStatus, updateChatType, setChatReturnValue, finalizeChildChats, isOrchestratorBlocked, createSubAgentChat
 
 - [ ] 2.0 AI Tools: Spawn, Generate, Return
     - [ ] 2.1 Add SUB_AGENT_SYSTEM_PROMPT to `lib/ai/prompts.ts`
