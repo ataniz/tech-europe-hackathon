@@ -36,9 +36,11 @@ import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
+  finalizeChildChats,
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
+  isOrchestratorBlocked,
   saveChat,
   saveMessages,
   updateChatLastContextById,
@@ -174,6 +176,17 @@ export async function POST(request: Request) {
       if (chat.userId !== session.user.id) {
         return new ChatSDKError("forbidden:chat").toResponse();
       }
+
+      // Check if orchestrator is blocked (has active sub-agents)
+      if (chat.chatType === "orchestrator") {
+        const blocked = await isOrchestratorBlocked(id);
+        if (blocked) {
+          return new ChatSDKError("blocked:chat").toResponse();
+        }
+        // Not blocked = all children returned, finalize them
+        await finalizeChildChats(id);
+      }
+
       // Only fetch messages if chat already exists
       messagesFromDb = await getMessagesByChatId({ id });
     } else {

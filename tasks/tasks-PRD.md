@@ -49,11 +49,11 @@ Generated from `PRD.md`
     - [x] 2.5 Create `lib/ai/tools/return-to-parent.ts` (sets status to returned, stores returnValue, signals navigation)
     - [x] 2.6 Register all 4 new tools in `app/(chat)/api/chat/route.ts` tools config
 
-- [ ] 3.0 Blocking & Resume Logic
-    - [ ] 3.1 Add "blocked:orchestrator" error type to `lib/errors.ts`
-    - [ ] 3.2 Add blocking check in `app/(chat)/api/chat/route.ts` POST handler (check isOrchestratorBlocked before processing)
-    - [ ] 3.3 Add finalization logic: when orchestrator continues after all returns, call finalizeChildChats
-    - [ ] 3.4 Filter sub-agent chats from sidebar query in history API
+- [x] 3.0 Blocking & Resume Logic
+    - [x] 3.1 Add "blocked:orchestrator" error type to `lib/errors.ts`
+    - [x] 3.2 Add blocking check in `app/(chat)/api/chat/route.ts` POST handler (check isOrchestratorBlocked before processing)
+    - [x] 3.3 Add finalization logic: when orchestrator continues after all returns, call finalizeChildChats
+    - [x] 3.4 Filter sub-agent chats from sidebar query in history API
 
 - [ ] 4.0 UI Components
     - [ ] 4.1 Create `components/asset-preview.tsx` – fetches asset by ID, renders image or video, supports sm/md/lg sizes

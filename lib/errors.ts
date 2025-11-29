@@ -4,7 +4,8 @@ export type ErrorType =
   | "forbidden"
   | "not_found"
   | "rate_limit"
-  | "offline";
+  | "offline"
+  | "blocked";
 
 export type Surface =
   | "chat"
@@ -103,6 +104,9 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
     case "offline:chat":
       return "We're having trouble sending your message. Please check your internet connection and try again.";
 
+    case "blocked:chat":
+      return "This orchestrator is waiting for all sub-agents to return. Please complete the branches first.";
+
     case "not_found:document":
       return "The requested document was not found. Please check the document ID and try again.";
     case "forbidden:document":
@@ -127,6 +131,8 @@ function getStatusCodeByType(type: ErrorType) {
       return 403;
     case "not_found":
       return 404;
+    case "blocked":
+      return 423;
     case "rate_limit":
       return 429;
     case "offline":

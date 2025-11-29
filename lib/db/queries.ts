@@ -9,7 +9,10 @@ import {
   gt,
   gte,
   inArray,
+  isNull,
   lt,
+  ne,
+  or,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -174,14 +177,20 @@ export async function getChatsByUserId({
   try {
     const extendedLimit = limit + 1;
 
+    // Exclude sub-agent chats from sidebar (they're only accessible via SpawnedAgentsCard)
+    const notSubAgent = or(
+      ne(chat.chatType, "sub-agent"),
+      isNull(chat.chatType)
+    );
+
     const query = (whereCondition?: SQL<any>) =>
       db
         .select()
         .from(chat)
         .where(
           whereCondition
-            ? and(whereCondition, eq(chat.userId, id))
-            : eq(chat.userId, id)
+            ? and(whereCondition, eq(chat.userId, id), notSubAgent)
+            : and(eq(chat.userId, id), notSubAgent)
         )
         .orderBy(desc(chat.createdAt))
         .limit(extendedLimit);
