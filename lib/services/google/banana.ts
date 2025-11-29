@@ -7,7 +7,7 @@ import type { Asset } from "@/lib/db/schema";
 import { generateUUID } from "@/lib/utils";
 import { getGoogleAIClient } from "./client";
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "assets");
+const IMAGES_DIR = path.join(process.cwd(), "public", "uploads", "images");
 const MODEL = "gemini-3-pro-image-preview";
 
 export type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
@@ -106,20 +106,20 @@ export async function generateImage(
     throw new Error("No image generated in response");
   }
 
-  // Ensure uploads directory exists
-  await mkdir(UPLOADS_DIR, { recursive: true });
+  // Ensure images directory exists
+  await mkdir(IMAGES_DIR, { recursive: true });
 
   // Determine file extension and save
   const extension = mime.getExtension(imageMimeType) || "png";
   const filename = `${generateUUID()}.${extension}`;
-  const filePath = path.join(UPLOADS_DIR, filename);
+  const filePath = path.join(IMAGES_DIR, filename);
   await writeFile(filePath, imageBuffer);
 
   // Create asset record
   const asset = await createAsset({
     chatId,
     type: "image",
-    url: `/uploads/assets/${filename}`,
+    url: `/uploads/images/${filename}`,
     prompt,
   });
 

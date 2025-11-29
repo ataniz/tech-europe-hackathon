@@ -5,7 +5,12 @@ import { auth } from "@/app/(auth)/auth";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
+import {
+  getChatById,
+  getChildChats,
+  getMessagesByChatId,
+  getParentChat,
+} from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
@@ -39,8 +44,25 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const uiMessages = convertToUIMessages(messagesFromDb);
 
+  // Fetch branching metadata
+  const parentChat = chat.parentChatId ? await getParentChat(id) : null;
+  const childChats =
+    chat.chatType === "orchestrator" ? await getChildChats(id) : [];
+  const activeChildCount = childChats.filter(
+    (c) => c.status === "active"
+  ).length;
+
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get("chat-model");
+
+  // Common branch props
+  const branchProps = {
+    parentChatId: chat.parentChatId ?? undefined,
+    parentTitle: parentChat?.title,
+    chatType: chat.chatType,
+    chatStatus: chat.status,
+    activeChildCount,
+  };
 
   if (!chatModelFromCookie) {
     return (
@@ -53,6 +75,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           initialMessages={uiMessages}
           initialVisibilityType={chat.visibility}
           isReadonly={session?.user?.id !== chat.userId}
+          {...branchProps}
         />
         <DataStreamHandler />
       </>
@@ -69,6 +92,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         initialMessages={uiMessages}
         initialVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
+        {...branchProps}
       />
       <DataStreamHandler />
     </>

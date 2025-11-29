@@ -20,9 +20,12 @@ import {
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
-import type { Vote } from "@/lib/db/schema";
+import type { ChatStatus, ChatType, Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
+import { BlockedOverlay } from "./blocked-overlay";
+import { BranchHeader } from "./branch-header";
+import { ReturnPanel } from "./return-panel";
 import type { AppUsage } from "@/lib/usage";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { Artifact } from "./artifact";
@@ -41,6 +44,11 @@ export function Chat({
   isReadonly,
   autoResume,
   initialLastContext,
+  parentChatId,
+  parentTitle,
+  chatType,
+  chatStatus,
+  activeChildCount = 0,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -49,6 +57,11 @@ export function Chat({
   isReadonly: boolean;
   autoResume: boolean;
   initialLastContext?: AppUsage;
+  parentChatId?: string;
+  parentTitle?: string;
+  chatType?: ChatType;
+  chatStatus?: ChatStatus;
+  activeChildCount?: number;
 }) {
   const { visibilityType } = useChatVisibility({
     chatId: id,
@@ -163,6 +176,10 @@ export function Chat({
           selectedVisibilityType={initialVisibilityType}
         />
 
+        {parentChatId && (
+          <BranchHeader parentChatId={parentChatId} parentTitle={parentTitle} />
+        )}
+
         <Messages
           chatId={id}
           isArtifactVisible={isArtifactVisible}
@@ -175,7 +192,29 @@ export function Chat({
           votes={votes}
         />
 
-        <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
+        {chatType === "sub-agent" && (
+          <ReturnPanel
+            chatId={id}
+            isFinalized={chatStatus === "finalized"}
+            onReturn={async (assets, summary) => {
+              // Trigger returnToParent tool via chat message
+              sendMessage({
+                role: "user" as const,
+                parts: [
+                  {
+                    type: "text",
+                    text: `Return to parent with assets: ${assets.join(", ")}${summary ? `. Summary: ${summary}` : ""}`,
+                  },
+                ],
+              });
+            }}
+          />
+        )}
+
+        <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4 relative">
+          {activeChildCount > 0 && (
+            <BlockedOverlay activeCount={activeChildCount} />
+          )}
           {!isReadonly && (
             <MultimodalInput
               attachments={attachments}

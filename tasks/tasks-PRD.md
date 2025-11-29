@@ -24,16 +24,14 @@ Generated from `PRD.md`
 - `components/branch-header.tsx` – ✅ Header showing parent relationship
 - `components/blocked-overlay.tsx` – ✅ Overlay when orchestrator is waiting
 - `components/message.tsx` – ✅ Added tool renderers for new tools
-- `app/(chat)/chat/[id]/page.tsx` – Add branch UI components
-- `components/asset-preview.tsx` – Render image/video by UUID
-- `components/spawned-agents-card.tsx` – Show spawned branches with status
-- `components/return-panel.tsx` – UI for selecting assets and returning
-- `components/branch-header.tsx` – Header showing parent relationship
-- `components/blocked-overlay.tsx` – Overlay when orchestrator is waiting
-- `components/attachment-bar.tsx` – Show attached assets in input area
-- `components/asset-picker.tsx` – Modal to select assets for attachment
-- `components/elements/message.tsx` – Parse JSON user messages, render assets
-- `components/elements/prompt-input.tsx` – Add attachment support
+- `app/(chat)/chat/[id]/page.tsx` – ✅ Fetches branching metadata, passes to Chat component
+- `components/chat.tsx` – ✅ Renders BranchHeader, ReturnPanel, BlockedOverlay based on chat type
+- `components/data-stream-handler.tsx` – ✅ Handles auto-navigation on branch return
+- `public/uploads/assets/` – ✅ Directory for local asset storage
+- `components/attachment-bar.tsx` – (Deferred) Show attached assets in input area
+- `components/asset-picker.tsx` – (Deferred) Modal to select assets for attachment
+- `components/elements/message.tsx` – (Deferred) Parse JSON user messages, render assets
+- `components/elements/prompt-input.tsx` – (Deferred) Add attachment support
 
 ---
 
@@ -72,13 +70,13 @@ Generated from `PRD.md`
     - [ ] 4.8 (Deferred) Create `components/attachment-bar.tsx` – horizontal list of attached assets with remove buttons
     - [ ] 4.9 (Deferred) Create `components/asset-picker.tsx` – modal to browse and select chat assets for attachment
 
-- [ ] 5.0 Integration & Wiring
-    - [ ] 5.1 Update `components/elements/message.tsx` to parse JSON user messages and render AssetPreview for attachments
-    - [ ] 5.2 Update `components/elements/prompt-input.tsx` to support attachments state and include AttachmentBar
-    - [ ] 5.3 Update `app/(chat)/chat/[id]/page.tsx` to show BranchHeader for sub-agents
-    - [ ] 5.4 Update `app/(chat)/chat/[id]/page.tsx` to show ReturnPanel for sub-agent chats
-    - [ ] 5.5 Update `app/(chat)/chat/[id]/page.tsx` to show BlockedOverlay when orchestrator is blocked
-    - [ ] 5.6 Wire SpawnedAgentsCard into tool call rendering with navigation to sub-chats
-    - [ ] 5.7 Implement auto-navigation to parent on return (via router.push after returnToParent)
-    - [ ] 5.8 Create `public/uploads/assets/` directory for local asset storage
+- [x] 5.0 Integration & Wiring
+    - [ ] 5.1 (Deferred) Update `components/elements/message.tsx` to parse JSON user messages and render AssetPreview for attachments
+    - [ ] 5.2 (Deferred) Update `components/elements/prompt-input.tsx` to support attachments state and include AttachmentBar
+    - [x] 5.3 Update `app/(chat)/chat/[id]/page.tsx` to fetch branching metadata and pass to Chat
+    - [x] 5.4 Update `components/chat.tsx` to show ReturnPanel for sub-agent chats
+    - [x] 5.5 Update `components/chat.tsx` to show BlockedOverlay when orchestrator is blocked
+    - [x] 5.6 Wire SpawnedAgentsCard into tool call rendering with navigation to sub-chats (Done in Phase 4)
+    - [x] 5.7 Implement auto-navigation to parent on return (via router.push in data-stream-handler.tsx)
+    - [x] 5.8 Create `public/uploads/assets/` directory for local asset storage
     - [ ] 5.9 Test full demo flow: spawn → work in branches → return → resume orchestrator

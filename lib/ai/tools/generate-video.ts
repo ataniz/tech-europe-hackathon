@@ -18,14 +18,14 @@ type GenerateVideoProps = {
   chatId: string;
 };
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "assets");
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 async function resolveAssetToImageInput(
   assetUrl: string
 ): Promise<ImageInput | null> {
   try {
-    const filename = assetUrl.replace(/^\/uploads\/assets\//, "");
-    const filePath = path.join(UPLOADS_DIR, filename);
+    // Asset URLs are like /uploads/images/filename.png or /uploads/filename.png
+    const filePath = path.join(PUBLIC_DIR, assetUrl);
     const buffer = await readFile(filePath);
     const mimeType = mime.getType(filePath) || "image/png";
     return { data: buffer, mimeType };

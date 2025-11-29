@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
 import { artifactDefinitions } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 
 export function DataStreamHandler() {
+  const router = useRouter();
   const { dataStream, setDataStream } = useDataStream();
 
   const { artifact, setArtifact, setMetadata } = useArtifact();
@@ -19,6 +21,15 @@ export function DataStreamHandler() {
     setDataStream([]);
 
     for (const delta of newDeltas) {
+      // Handle branch navigation
+      if (delta.type === "data-branchReturned") {
+        const { navigateTo } = delta.data as { navigateTo: string };
+        if (navigateTo) {
+          router.push(`/chat/${navigateTo}`);
+        }
+        continue;
+      }
+
       const artifactDefinition = artifactDefinitions.find(
         (currentArtifactDefinition) =>
           currentArtifactDefinition.kind === artifact.kind
@@ -77,7 +88,7 @@ export function DataStreamHandler() {
         }
       });
     }
-  }, [dataStream, setArtifact, setMetadata, artifact]);
+  }, [dataStream, setArtifact, setMetadata, artifact, router]);
 
   return null;
 }

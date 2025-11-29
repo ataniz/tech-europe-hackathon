@@ -1,17 +1,16 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { tool, type UIMessageStreamWriter } from "ai";
 import mime from "mime";
 import type { Session } from "next-auth";
 import { z } from "zod";
-import { createAsset, getAssetsByIds } from "@/lib/db/queries";
+import { getAssetsByIds } from "@/lib/db/queries";
 import {
   generateImage as bananaGenerateImage,
   type AspectRatio,
   type ReferenceImage,
 } from "@/lib/services/google/banana";
 import type { ChatMessage } from "@/lib/types";
-import { generateUUID } from "@/lib/utils";
 
 type GenerateImageProps = {
   session: Session;
@@ -19,7 +18,7 @@ type GenerateImageProps = {
   chatId: string;
 };
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "assets");
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 async function resolveReferenceAssets(
   assetIds: string[]
@@ -33,12 +32,10 @@ async function resolveReferenceAssets(
     if (asset.type !== "image") continue;
 
     try {
-      // Asset URLs are like /uploads/assets/filename.png
-      const filename = asset.url.replace(/^\/uploads\/assets\//, "");
-      const filePath = path.join(UPLOADS_DIR, filename);
+      // Asset URLs are like /uploads/images/filename.png or /uploads/filename.png
+      const filePath = path.join(PUBLIC_DIR, asset.url);
       const buffer = await readFile(filePath);
       const mimeType = mime.getType(filePath) || "image/png";
-
       references.push({ data: buffer, mimeType });
     } catch (error) {
       console.error(`Failed to read reference asset ${asset.id}:`, error);
@@ -70,46 +67,32 @@ export const generateImage = ({
         .describe("Aspect ratio for the generated image"),
     }),
     execute: async ({ prompt, referenceAssets, aspectRatio }) => {
-      // Ensure uploads directory exists
-      await mkdir(UPLOADS_DIR, { recursive: true });
-
       // Resolve reference assets if provided
       const referenceImages = referenceAssets
         ? await resolveReferenceAssets(referenceAssets)
         : undefined;
 
-      // Generate image using Banana service
+      // Generate image
       const result = await bananaGenerateImage({
+        chatId,
         prompt,
         referenceImages,
         aspectRatio: aspectRatio as AspectRatio | undefined,
       });
 
-      // Determine file extension from mime type
-      const extension = mime.getExtension(result.mimeType) || "png";
-      const filename = `${generateUUID()}.${extension}`;
-      const filePath = path.join(UPLOADS_DIR, filename);
-
-      // Save to disk
-      await writeFile(filePath, result.buffer);
-
-      // Create asset record
-      const asset = await createAsset({
-        chatId,
-        type: "image",
-        url: `/uploads/assets/${filename}`,
-        prompt,
-      });
-
       // Notify UI
       dataStream.write({
         type: "data-assetCreated",
-        data: { assetId: asset.id, url: asset.url, type: "image" },
+        data: {
+          assetId: result.asset.id,
+          url: result.asset.url,
+          type: "image",
+        },
       });
 
       return {
-        assetId: asset.id,
-        url: asset.url,
+        assetId: result.asset.id,
+        url: result.asset.url,
         message: result.text || "Image generated successfully",
       };
     },

@@ -1,27 +1,31 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { VideoGenerationReferenceType } from "@google/genai";
+import {
+  VideoGenerationReferenceType,
+  type GenerateVideosConfig,
+  type GenerateVideosParameters,
+  type Image,
+  type VideoGenerationReferenceImage,
+} from "@google/genai";
 import { createAsset } from "@/lib/db/queries";
 import type { Asset } from "@/lib/db/schema";
 import { generateUUID } from "@/lib/utils";
 import { getGoogleAIClient } from "./client";
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "assets");
+const VIDEOS_DIR = path.join(process.cwd(), "public", "uploads", "videos");
 const DEFAULT_MODEL = "veo-3.1-fast-generate-preview";
 const POLL_INTERVAL_MS = 10_000;
 const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-export type VeoModel = "veo-3.1-fast-generate-preview" | "veo-3.1-generate-preview";
+export type VeoModel =
+  | "veo-3.1-fast-generate-preview"
+  | "veo-3.1-generate-preview";
 export type VeoAspectRatio = "16:9" | "9:16";
 export type VeoResolution = "720p" | "1080p";
 
 export type ImageInput = {
   data: Buffer | string; // Buffer or base64
   mimeType: string;
-};
-
-export type ReferenceImage = ImageInput & {
-  referenceType: "asset" | "style";
 };
 
 export type VeoGenerateParams = {
@@ -59,6 +63,13 @@ function toBase64(input: Buffer | string): string {
   return input instanceof Buffer ? input.toString("base64") : String(input);
 }
 
+function toImage(input: ImageInput): Image {
+  return {
+    imageBytes: toBase64(input.data),
+    mimeType: input.mimeType,
+  };
+}
+
 export async function generateVideo(
   params: VeoGenerateParams
 ): Promise<VeoGenerateResult> {
@@ -83,14 +94,14 @@ export async function generateVideo(
   const client = getGoogleAIClient();
 
   // Build config
-  const config: Record<string, unknown> = {
+  const config: GenerateVideosConfig = {
     numberOfVideos: 1,
     resolution,
     aspectRatio,
   };
 
   // Build payload
-  const payload: Record<string, unknown> = {
+  const payload: GenerateVideosParameters = {
     model,
     config,
   };
@@ -102,35 +113,23 @@ export async function generateVideo(
 
   // Handle start frame (image-to-video)
   if (startFrame) {
-    payload.image = {
-      imageBytes: toBase64(startFrame.data),
-      mimeType: startFrame.mimeType,
-    };
+    payload.image = toImage(startFrame);
 
     // Handle end frame or looping
     const finalEndFrame = isLooping ? startFrame : endFrame;
     if (finalEndFrame) {
-      config.lastFrame = {
-        imageBytes: toBase64(finalEndFrame.data),
-        mimeType: finalEndFrame.mimeType,
-      };
+      config.lastFrame = toImage(finalEndFrame);
     }
   }
 
   // Handle reference images
   if (referenceImages || styleImage) {
-    const refs: Array<{
-      image: { imageBytes: string; mimeType: string };
-      referenceType: VideoGenerationReferenceType;
-    }> = [];
+    const refs: VideoGenerationReferenceImage[] = [];
 
     if (referenceImages) {
       for (const img of referenceImages) {
         refs.push({
-          image: {
-            imageBytes: toBase64(img.data),
-            mimeType: img.mimeType,
-          },
+          image: toImage(img),
           referenceType: VideoGenerationReferenceType.ASSET,
         });
       }
@@ -138,10 +137,7 @@ export async function generateVideo(
 
     if (styleImage) {
       refs.push({
-        image: {
-          imageBytes: toBase64(styleImage.data),
-          mimeType: styleImage.mimeType,
-        },
+        image: toImage(styleImage),
         referenceType: VideoGenerationReferenceType.STYLE,
       });
     }
@@ -183,25 +179,27 @@ export async function generateVideo(
 
   const response = await fetch(fetchUrl);
   if (!response.ok) {
-    throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch video: ${response.status} ${response.statusText}`
+    );
   }
 
   const videoBlob = await response.blob();
   const buffer = Buffer.from(await videoBlob.arrayBuffer());
 
-  // Ensure uploads directory exists
-  await mkdir(UPLOADS_DIR, { recursive: true });
+  // Ensure videos directory exists
+  await mkdir(VIDEOS_DIR, { recursive: true });
 
   // Save to disk
   const filename = `${generateUUID()}.mp4`;
-  const filePath = path.join(UPLOADS_DIR, filename);
+  const filePath = path.join(VIDEOS_DIR, filename);
   await writeFile(filePath, buffer);
 
   // Create asset record
   const asset = await createAsset({
     chatId,
     type: "video",
-    url: `/uploads/assets/${filename}`,
+    url: `/uploads/videos/${filename}`,
     prompt: prompt || undefined,
   });
 
