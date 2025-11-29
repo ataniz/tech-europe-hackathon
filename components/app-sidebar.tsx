@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { PlusIcon, TrashIcon } from "@/components/icons";
+import { PlusIcon, StoryboardIcon, TrashIcon } from "@/components/icons";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -20,6 +20,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -60,26 +61,35 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   return (
     <>
       <Sidebar className="group-data-[side=left]:border-r-0">
-        <SidebarHeader>
+        <SidebarHeader className="pb-1">
           <SidebarMenu>
-            <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row items-center justify-between gap-2">
               <Link
-                className="flex flex-row items-center gap-3"
+                className="flex flex-row items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
                 href="/"
                 onClick={() => {
                   setOpenMobile(false);
                 }}
               >
-                <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
-                  Chatbot
+                <StoryboardIcon size={18} />
+                <span className="cursor-pointer font-semibold text-lg">
+                  StoryBoarder
                 </span>
               </Link>
-              <div className="flex flex-row gap-1">
+              <div className="flex flex-row items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarTrigger className="h-8 w-8 rounded-md hover:bg-muted" />
+                  </TooltipTrigger>
+                  <TooltipContent align="end" className="hidden md:block">
+                    Toggle Sidebar
+                  </TooltipContent>
+                </Tooltip>
                 {user && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        className="h-8 p-1 md:h-fit md:p-2"
+                        className="h-8 w-8 rounded-md p-1 md:h-fit md:w-8 md:p-2"
                         onClick={() => setShowDeleteAllDialog(true)}
                         type="button"
                         variant="ghost"
@@ -95,7 +105,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      className="h-8 p-1 md:h-fit md:p-2"
+                      className="h-8 w-8 rounded-md p-1 md:h-fit md:w-8 md:p-2"
                       onClick={() => {
                         setOpenMobile(false);
                         router.push("/");
@@ -121,7 +131,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
         <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
       </Sidebar>
 
-      <AlertDialog
+      {/* <AlertDialog
         onOpenChange={setShowDeleteAllDialog}
         open={showDeleteAllDialog}
       >
@@ -140,7 +150,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </>
   );
 }

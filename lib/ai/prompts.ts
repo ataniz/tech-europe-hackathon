@@ -124,6 +124,7 @@ Your role:
 You have access to:
 - generateImage: Create images based on prompts
 - generateVideo: Create videos based on prompts
+- concatenateVideos: Stitch multiple video assets together in order
 - returnToParent: Complete your task and return results
 
 ## Parent Conversation Context

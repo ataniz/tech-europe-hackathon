@@ -13,16 +13,16 @@ export const Greeting = () => {
         initial={{ opacity: 0, y: 10 }}
         transition={{ delay: 0.5 }}
       >
-        Hello there!
+        Let’s lay out your storyboard.
       </motion.div>
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        className="text-xl text-zinc-500 md:text-2xl"
+        className="text-xl text-muted-foreground md:text-2xl"
         exit={{ opacity: 0, y: 10 }}
         initial={{ opacity: 0, y: 10 }}
         transition={{ delay: 0.6 }}
       >
-        How can I help you today?
+        Describe a scene, mood, or shot list and I’ll sketch frames and notes.
       </motion.div>
     </div>
   );

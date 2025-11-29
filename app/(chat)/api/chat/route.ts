@@ -24,6 +24,7 @@ import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
+import { concatenateVideos } from "@/lib/ai/tools/concatenate-videos";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { generateImage } from "@/lib/ai/tools/generate-image";
 import { generateVideo } from "@/lib/ai/tools/generate-video";
@@ -250,6 +251,7 @@ export async function POST(request: Request) {
             "spawnSubAgents",
             "generateImage",
             "generateVideo",
+            "concatenateVideos",
             "returnToParent",
           ],
           experimental_transform: smoothStream({ chunking: "word" }),
@@ -272,6 +274,11 @@ export async function POST(request: Request) {
               chatId: id,
             }),
             generateVideo: generateVideo({
+              session,
+              dataStream,
+              chatId: id,
+            }),
+            concatenateVideos: concatenateVideos({
               session,
               dataStream,
               chatId: id,

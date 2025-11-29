@@ -66,13 +66,13 @@ function FullScreenPreview({
       </Button>
 
       <div
-        className="relative max-h-[90vh] max-w-[90vw]"
+        className="relative max-h-[90vh] max-w-[90vw] rounded-2xl border border-border/60 bg-black/30 p-2 shadow-2xl backdrop-blur"
         onClick={(e) => e.stopPropagation()}
       >
         {asset.type === "video" ? (
           <video
             src={asset.url}
-            className="max-h-[90vh] max-w-[90vw] rounded-lg"
+            className="max-h-[90vh] max-w-[90vw] overflow-hidden rounded-xl shadow-lg"
             controls
             autoPlay
           />
@@ -80,7 +80,7 @@ function FullScreenPreview({
           <img
             src={asset.url}
             alt={asset.prompt || "Asset"}
-            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+            className="max-h-[90vh] max-w-[90vw] overflow-hidden rounded-xl object-contain shadow-lg"
           />
         )}
 
@@ -133,12 +133,15 @@ export function AssetPreview({
   const isAttached = attachmentContext?.attachments.some(
     (a) => a.assetId === assetId
   );
+  const label =
+    (asset?.prompt && asset.prompt.trim()) ||
+    (asset?.type === "video" ? "Video" : "Image");
 
   if (isLoading) {
     return (
       <div
         className={cn(
-          "h-24 w-24 bg-muted animate-pulse rounded",
+          "h-24 w-24 animate-pulse rounded-xl border border-border/70 bg-muted shadow-sm",
           className
         )}
       />
@@ -150,20 +153,29 @@ export function AssetPreview({
   return (
     <>
       <div
-        className={cn("group cursor-pointer inline-block", className)}
+        className={cn(
+          "group inline-block cursor-pointer transition-transform duration-150 hover:-translate-y-0.5",
+          className
+        )}
         onClick={() => setIsFullScreen(true)}
       >
-        <div className="relative inline-block">
+        <div className="relative inline-flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-card p-1 shadow-sm">
           {asset.type === "video" ? (
             <video
               src={asset.url}
-              className={cn(sizes[size], "rounded object-contain pointer-events-none")}
+              className={cn(
+                sizes[size],
+                "rounded-lg object-cover pointer-events-none bg-muted"
+              )}
             />
           ) : (
             <img
               src={asset.url}
               alt={asset.prompt || "Asset"}
-              className={cn(sizes[size], "rounded object-contain")}
+              className={cn(
+                sizes[size],
+                "rounded-lg object-cover bg-muted"
+              )}
             />
           )}
 
@@ -178,9 +190,15 @@ export function AssetPreview({
               )}
               onClick={handleAttach}
               disabled={isAttached}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+          )}
+
+          {label && (
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm line-clamp-1">
+              {label}
+            </div>
           )}
         </div>
       </div>

@@ -19,7 +19,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "./elements/tool";
-import { SparklesIcon } from "./icons";
+import { StoryboardIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
@@ -89,8 +89,8 @@ const PurePreviewMessage = ({
         })}
       >
         {message.role === "assistant" && (
-          <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-            <SparklesIcon size={14} />
+          <div className="-mt-1 flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200/60 bg-amber-50/70 text-amber-700 shadow-sm dark:border-amber-300/40 dark:bg-amber-400/15 dark:text-amber-100">
+            <StoryboardIcon size={16} />
           </div>
         )}
 
@@ -179,18 +179,16 @@ const PurePreviewMessage = ({
 
                     {/* Message text */}
                     <MessageContent
-                      className={cn({
-                        "w-fit break-words rounded-2xl px-3 py-2 text-right text-white":
-                          message.role === "user",
-                        "bg-transparent px-0 py-0 text-left":
-                          message.role === "assistant",
-                      })}
+                      className={cn(
+                        "shadow-sm",
+                        {
+                          "w-fit break-words rounded-2xl border border-primary/20 bg-primary px-4 py-3 text-right text-primary-foreground":
+                            message.role === "user",
+                          "w-full max-w-full rounded-2xl border border-border/70 bg-card px-4 py-3 text-left":
+                            message.role === "assistant",
+                        }
+                      )}
                       data-testid="message-content"
-                      style={
-                        message.role === "user"
-                          ? { backgroundColor: "#006cff" }
-                          : undefined
-                      }
                     >
                       <Response>{sanitizeText(parsed.text)}</Response>
                     </MessageContent>
@@ -371,7 +369,11 @@ const PurePreviewMessage = ({
               );
             }
 
-            if (type === "tool-generateImage" || type === "tool-generateVideo") {
+            if (
+              type === "tool-generateImage" ||
+              type === "tool-generateVideo" ||
+              type === "tool-concatenateVideos"
+            ) {
               const partAny = part as any;
               const { toolCallId, state } = partAny;
               const hasOutput = state === "output-available" || state === "result";

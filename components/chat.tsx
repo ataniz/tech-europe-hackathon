@@ -77,7 +77,7 @@ export function Chat({
   const [input, setInput] = useState<string>("");
   const [usage, setUsage] = useState<AppUsage | undefined>(initialLastContext);
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
-  const [currentModelId, setCurrentModelId] = useState(initialChatModel);
+  const [currentModelId] = useState(initialChatModel);
   const currentModelIdRef = useRef(currentModelId);
 
   useEffect(() => {
@@ -228,7 +228,6 @@ export function Chat({
               chatId={id}
               input={input}
               messages={messages}
-              onModelChange={setCurrentModelId}
               selectedModelId={currentModelId}
               selectedVisibilityType={visibilityType}
               sendMessage={sendMessage}

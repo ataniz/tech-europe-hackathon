@@ -4,6 +4,7 @@ import { SUB_AGENT_SYSTEM_PROMPT } from "./prompts";
 import { myProvider } from "./providers";
 import { generateImage } from "./tools/generate-image";
 import { generateVideo } from "./tools/generate-video";
+import { concatenateVideos } from "./tools/concatenate-videos";
 import { returnToParent } from "./tools/return-to-parent";
 import {
   createStreamId,
@@ -76,6 +77,11 @@ export async function triggerSubAgentResponse({
           chatId,
         }),
         generateVideo: generateVideo({
+          session,
+          dataStream: mockDataStream as any,
+          chatId,
+        }),
+        concatenateVideos: concatenateVideos({
           session,
           dataStream: mockDataStream as any,
           chatId,
