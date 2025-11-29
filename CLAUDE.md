@@ -18,11 +18,15 @@ pnpm db:push          # Push schema directly (dev only)
 
 # Testing (Playwright)
 pnpm test             # Run all E2E tests (sets PLAYWRIGHT=True)
+
+# Local Services (macOS with Homebrew)
+brew services start postgresql@14
+brew services start redis
 ```
 
 ## Architecture
 
-**Chat SDK** - Next.js 15 AI chatbot template using AI SDK with Vercel AI Gateway.
+**Chat SDK** - Next.js 15 AI chatbot template using AI SDK with Google Gemini.
 
 ### Route Groups
 - `app/(auth)/` - Authentication (NextAuth v5 beta, guest login support)
@@ -30,14 +34,19 @@ pnpm test             # Run all E2E tests (sets PLAYWRIGHT=True)
 
 ### Core Directories
 - `lib/ai/` - AI provider config, model definitions, system prompts, tool implementations
-- `lib/db/` - Drizzle schema, queries, migrations (PostgreSQL via Neon)
+- `lib/db/` - Drizzle schema, queries, migrations (local PostgreSQL)
 - `artifacts/` - Document types (text, code, image, sheet) with client/server split
 - `components/` - React components, `components/elements/` for chat-specific UI
 
 ### AI Integration
 - Models defined in `lib/ai/models.ts` (chat-model, chat-model-reasoning)
-- Provider wrapping in `lib/ai/providers.ts` (xAI Grok via gateway)
+- Provider: Google Gemini 2.0 Flash in `lib/ai/providers.ts`
 - Tools: getWeather, createDocument, updateDocument, requestSuggestions
+
+### Local Development Setup
+- PostgreSQL: Local instance on port 5432
+- Redis: Local instance on port 6379 (for resumable streams)
+- File uploads: Stored in `public/uploads/` (not Vercel Blob)
 
 ### Database Schema (`lib/db/schema.ts`)
 Tables: User, Chat, Message_v2, Vote_v2, Document, Suggestion, Stream
