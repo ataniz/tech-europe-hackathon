@@ -14,6 +14,7 @@ export const PreviewAttachment = ({
   onRemove?: () => void;
 }) => {
   const { name, url, contentType } = attachment;
+  const isLocalFile = url.startsWith("/uploads");
 
   return (
     <div
@@ -21,13 +22,23 @@ export const PreviewAttachment = ({
       data-testid="input-attachment-preview"
     >
       {contentType?.startsWith("image") ? (
-        <Image
-          alt={name ?? "An image attachment"}
-          className="size-full object-cover"
-          height={64}
-          src={url}
-          width={64}
-        />
+        isLocalFile ? (
+          // Use native img for local files to avoid Next.js Image optimization issues
+          // biome-ignore lint/a11y/useAltText: alt is provided
+          <img
+            alt={name ?? "An image attachment"}
+            className="size-full object-cover"
+            src={url}
+          />
+        ) : (
+          <Image
+            alt={name ?? "An image attachment"}
+            className="size-full object-cover"
+            height={64}
+            src={url}
+            width={64}
+          />
+        )
       ) : (
         <div className="flex size-full items-center justify-center text-muted-foreground text-xs">
           File

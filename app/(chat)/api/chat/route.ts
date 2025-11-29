@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
@@ -23,8 +25,12 @@ import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { generateImage } from "@/lib/ai/tools/generate-image";
+import { generateVideo } from "@/lib/ai/tools/generate-video";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+import { returnToParent } from "@/lib/ai/tools/return-to-parent";
+import { spawnSubAgents } from "@/lib/ai/tools/spawn-sub-agents";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
@@ -48,6 +54,41 @@ import { type PostRequestBody, postRequestBodySchema } from "./schema";
 export const maxDuration = 60;
 
 let globalStreamContext: ResumableStreamContext | null = null;
+
+// Convert local file URLs to base64 data URLs for the AI model
+async function resolveLocalFileUrls(
+  messages: ChatMessage[]
+): Promise<ChatMessage[]> {
+  const resolvedMessages = await Promise.all(
+    messages.map(async (message) => {
+      const resolvedParts = await Promise.all(
+        message.parts.map(async (part) => {
+          if (part.type === "file" && part.url.startsWith("/uploads/")) {
+            try {
+              const filename = part.url.replace("/uploads/", "");
+              const filePath = path.join(
+                process.cwd(),
+                "public",
+                "uploads",
+                filename
+              );
+              const fileBuffer = await readFile(filePath);
+              const base64 = fileBuffer.toString("base64");
+              const dataUrl = `data:${part.mediaType};base64,${base64}`;
+              return { ...part, url: dataUrl };
+            } catch (error) {
+              console.error("Failed to read local file:", part.url, error);
+              return part;
+            }
+          }
+          return part;
+        })
+      );
+      return { ...message, parts: resolvedParts };
+    })
+  );
+  return resolvedMessages;
+}
 
 const getTokenlensCatalog = cache(
   async (): Promise<ModelCatalog | undefined> => {
@@ -151,6 +192,9 @@ export async function POST(request: Request) {
 
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
 
+    // Resolve local file URLs to base64 data URLs for the AI model
+    const resolvedMessages = await resolveLocalFileUrls(uiMessages);
+
     const { longitude, latitude, city, country } = geolocation(request);
 
     const requestHints: RequestHints = {
@@ -183,13 +227,17 @@ export async function POST(request: Request) {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
+          messages: convertToModelMessages(resolvedMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools: [
             "getWeather",
             "createDocument",
             "updateDocument",
             "requestSuggestions",
+            "spawnSubAgents",
+            "generateImage",
+            "generateVideo",
+            "returnToParent",
           ],
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: {
@@ -199,6 +247,26 @@ export async function POST(request: Request) {
             requestSuggestions: requestSuggestions({
               session,
               dataStream,
+            }),
+            spawnSubAgents: spawnSubAgents({
+              session,
+              dataStream,
+              chatId: id,
+            }),
+            generateImage: generateImage({
+              session,
+              dataStream,
+              chatId: id,
+            }),
+            generateVideo: generateVideo({
+              session,
+              dataStream,
+              chatId: id,
+            }),
+            returnToParent: returnToParent({
+              session,
+              dataStream,
+              chatId: id,
             }),
           },
           providerOptions: {

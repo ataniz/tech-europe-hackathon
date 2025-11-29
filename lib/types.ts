@@ -2,8 +2,12 @@ import type { InferUITool, UIMessage } from "ai";
 import { z } from "zod";
 import type { ArtifactKind } from "@/components/artifact";
 import type { createDocument } from "./ai/tools/create-document";
+import type { generateImage } from "./ai/tools/generate-image";
+import type { generateVideo } from "./ai/tools/generate-video";
 import type { getWeather } from "./ai/tools/get-weather";
 import type { requestSuggestions } from "./ai/tools/request-suggestions";
+import type { returnToParent } from "./ai/tools/return-to-parent";
+import type { spawnSubAgents } from "./ai/tools/spawn-sub-agents";
 import type { updateDocument } from "./ai/tools/update-document";
 import type { Suggestion } from "./db/schema";
 import type { AppUsage } from "./usage";
@@ -22,12 +26,35 @@ type updateDocumentTool = InferUITool<ReturnType<typeof updateDocument>>;
 type requestSuggestionsTool = InferUITool<
   ReturnType<typeof requestSuggestions>
 >;
+type spawnSubAgentsTool = InferUITool<ReturnType<typeof spawnSubAgents>>;
+type generateImageTool = InferUITool<ReturnType<typeof generateImage>>;
+type generateVideoTool = InferUITool<ReturnType<typeof generateVideo>>;
+type returnToParentTool = InferUITool<ReturnType<typeof returnToParent>>;
 
 export type ChatTools = {
   getWeather: weatherTool;
   createDocument: createDocumentTool;
   updateDocument: updateDocumentTool;
   requestSuggestions: requestSuggestionsTool;
+  spawnSubAgents: spawnSubAgentsTool;
+  generateImage: generateImageTool;
+  generateVideo: generateVideoTool;
+  returnToParent: returnToParentTool;
+};
+
+export type SpawnedAgentsData = {
+  chats: Array<{ id: string; name: string }>;
+};
+
+export type AssetCreatedData = {
+  assetId: string;
+  url: string;
+  type: "image" | "video";
+};
+
+export type BranchReturnedData = {
+  chatId: string;
+  navigateTo: string | null;
 };
 
 export type CustomUIDataTypes = {
@@ -43,6 +70,10 @@ export type CustomUIDataTypes = {
   clear: null;
   finish: null;
   usage: AppUsage;
+  // Branching data types
+  spawnedAgents: SpawnedAgentsData;
+  assetCreated: AssetCreatedData;
+  branchReturned: BranchReturnedData;
 };
 
 export type ChatMessage = UIMessage<

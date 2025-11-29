@@ -9,13 +9,14 @@ Generated from `PRD.md`
 - `lib/db/schema.ts` – ✅ Added Asset table, extended Chat table with branching fields (parentChatId, chatType, status, returnValue)
 - `lib/db/queries.ts` – ✅ Added 4 asset queries + 8 branching queries
 - `lib/db/migrations/0008_brief_genesis.sql` – Migration for Phase 1 schema changes
-- `lib/ai/prompts.ts` – Add SUB_AGENT_SYSTEM_PROMPT constant
-- `lib/ai/tools/spawn-sub-agents.ts` – Tool to spawn parallel sub-agent chats
-- `lib/ai/tools/generate-image.ts` – Placeholder tool for Gemini image generation
-- `lib/ai/tools/generate-video.ts` – Placeholder tool for Gemini video generation
-- `lib/ai/tools/return-to-parent.ts` – Tool to return results to parent chat
+- `lib/ai/prompts.ts` – ✅ Added SUB_AGENT_SYSTEM_PROMPT constant
+- `lib/ai/tools/spawn-sub-agents.ts` – ✅ Tool to spawn parallel sub-agent chats
+- `lib/ai/tools/generate-image.ts` – ✅ Placeholder tool for Gemini image generation
+- `lib/ai/tools/generate-video.ts` – ✅ Placeholder tool for Gemini video generation
+- `lib/ai/tools/return-to-parent.ts` – ✅ Tool to return results to parent chat
+- `lib/types.ts` – ✅ Extended with new tool types and CustomUIDataTypes
+- `app/(chat)/api/chat/route.ts` – ✅ Registered 4 new tools
 - `lib/errors.ts` – Add blocked:orchestrator error type
-- `app/(chat)/api/chat/route.ts` – Register new tools, add blocking logic
 - `app/(chat)/api/assets/route.ts` – Asset CRUD API endpoints
 - `app/(chat)/chat/[id]/page.tsx` – Add branch UI components
 - `components/asset-preview.tsx` – Render image/video by UUID
@@ -40,13 +41,13 @@ Generated from `PRD.md`
     - [x] 1.5 Add asset queries to `lib/db/queries.ts`: createAsset, getAssetById, getAssetsByChatId, getAssetsByIds
     - [x] 1.6 Add branching queries to `lib/db/queries.ts`: getChildChats, getParentChat, updateChatStatus, updateChatType, setChatReturnValue, finalizeChildChats, isOrchestratorBlocked, createSubAgentChat
 
-- [ ] 2.0 AI Tools: Spawn, Generate, Return
-    - [ ] 2.1 Add SUB_AGENT_SYSTEM_PROMPT to `lib/ai/prompts.ts`
-    - [ ] 2.2 Create `lib/ai/tools/spawn-sub-agents.ts` with spawnSubAgents tool (creates chats, injects brief as first message, triggers AI response)
-    - [ ] 2.3 Create `lib/ai/tools/generate-image.ts` placeholder (returns mock assetId/url, creates Asset record)
-    - [ ] 2.4 Create `lib/ai/tools/generate-video.ts` placeholder (returns mock assetId/url, creates Asset record)
-    - [ ] 2.5 Create `lib/ai/tools/return-to-parent.ts` (sets status to returned, stores returnValue, signals navigation)
-    - [ ] 2.6 Register all 4 new tools in `app/(chat)/api/chat/route.ts` tools config
+- [x] 2.0 AI Tools: Spawn, Generate, Return
+    - [x] 2.1 Add SUB_AGENT_SYSTEM_PROMPT to `lib/ai/prompts.ts`
+    - [x] 2.2 Create `lib/ai/tools/spawn-sub-agents.ts` with spawnSubAgents tool (creates chats, injects brief as first message, triggers AI response)
+    - [x] 2.3 Create `lib/ai/tools/generate-image.ts` placeholder (returns mock assetId/url, creates Asset record)
+    - [x] 2.4 Create `lib/ai/tools/generate-video.ts` placeholder (returns mock assetId/url, creates Asset record)
+    - [x] 2.5 Create `lib/ai/tools/return-to-parent.ts` (sets status to returned, stores returnValue, signals navigation)
+    - [x] 2.6 Register all 4 new tools in `app/(chat)/api/chat/route.ts` tools config
 
 - [ ] 3.0 Blocking & Resume Logic
     - [ ] 3.1 Add "blocked:orchestrator" error type to `lib/errors.ts`
