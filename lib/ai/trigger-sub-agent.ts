@@ -1,11 +1,5 @@
 import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import type { Session } from "next-auth";
-import { SUB_AGENT_SYSTEM_PROMPT } from "./prompts";
-import { myProvider } from "./providers";
-import { generateImage } from "./tools/generate-image";
-import { generateVideo } from "./tools/generate-video";
-import { concatenateVideos } from "./tools/concatenate-videos";
-import { returnToParent } from "./tools/return-to-parent";
 import {
   createStreamId,
   getChatById,
@@ -13,6 +7,12 @@ import {
   saveMessages,
 } from "@/lib/db/queries";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
+import { SUB_AGENT_SYSTEM_PROMPT } from "./prompts";
+import { myProvider } from "./providers";
+import { concatenateVideos } from "./tools/concatenate-videos";
+import { generateImage } from "./tools/generate-image";
+import { generateVideo } from "./tools/generate-video";
+import { returnToParent } from "./tools/return-to-parent";
 
 const SUB_AGENT_MODEL = "chat-model" as const;
 
@@ -58,7 +58,10 @@ export async function triggerSubAgentResponse({
     // Create a mock dataStream writer for tools
     const mockDataStream = {
       write: (data: unknown) => {
-        console.log(`[Sub-agent ${chatId}] Tool data:`, JSON.stringify(data).slice(0, 200));
+        console.log(
+          `[Sub-agent ${chatId}] Tool data:`,
+          JSON.stringify(data).slice(0, 200)
+        );
       },
       merge: () => {},
     };
@@ -96,15 +99,23 @@ export async function triggerSubAgentResponse({
         google: {
           safetySettings: [
             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_NONE",
+            },
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_NONE",
+            },
           ],
         },
       },
     });
 
-    console.log(`[Sub-agent ${chatId}] Response: text="${text.slice(0, 100)}...", steps=${steps.length}`);
+    console.log(
+      `[Sub-agent ${chatId}] Response: text="${text.slice(0, 100)}...", steps=${steps.length}`
+    );
 
     // Build message parts in the same format as streaming (toUIMessageStream)
     const parts: Array<{ type: string; [key: string]: unknown }> = [];
@@ -142,7 +153,10 @@ export async function triggerSubAgentResponse({
       parts.push({ type: "text", text });
     }
 
-    console.log(`[Sub-agent ${chatId}] Built ${parts.length} parts:`, parts.map(p => p.type).join(", "));
+    console.log(
+      `[Sub-agent ${chatId}] Built ${parts.length} parts:`,
+      parts.map((p) => p.type).join(", ")
+    );
 
     // Save assistant message
     if (parts.length > 0) {
@@ -156,11 +170,12 @@ export async function triggerSubAgentResponse({
       };
 
       await saveMessages({ messages: [assistantMessage] });
-      console.log(`[Sub-agent ${chatId}] Saved message with ${parts.length} parts`);
+      console.log(
+        `[Sub-agent ${chatId}] Saved message with ${parts.length} parts`
+      );
     } else {
       console.warn(`[Sub-agent ${chatId}] No parts to save`);
     }
-
   } catch (error) {
     console.error(`[Sub-agent ${chatId}] Error:`, error);
   }

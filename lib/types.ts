@@ -1,8 +1,8 @@
 import type { InferUITool, UIMessage } from "ai";
 import { z } from "zod";
 import type { ArtifactKind } from "@/components/artifact";
-import type { createDocument } from "./ai/tools/create-document";
 import type { concatenateVideos } from "./ai/tools/concatenate-videos";
+import type { createDocument } from "./ai/tools/create-document";
 import type { generateImage } from "./ai/tools/generate-image";
 import type { generateVideo } from "./ai/tools/generate-video";
 import type { getWeather } from "./ai/tools/get-weather";
@@ -28,9 +28,7 @@ type requestSuggestionsTool = InferUITool<
   ReturnType<typeof requestSuggestions>
 >;
 type spawnSubAgentsTool = InferUITool<ReturnType<typeof spawnSubAgents>>;
-type concatenateVideosTool = InferUITool<
-  ReturnType<typeof concatenateVideos>
->;
+type concatenateVideosTool = InferUITool<ReturnType<typeof concatenateVideos>>;
 type generateImageTool = InferUITool<ReturnType<typeof generateImage>>;
 type generateVideoTool = InferUITool<ReturnType<typeof generateVideo>>;
 type returnToParentTool = InferUITool<ReturnType<typeof returnToParent>>;

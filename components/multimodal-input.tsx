@@ -19,6 +19,8 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import { cn } from "@/lib/utils";
+import { AssetPreview } from "./asset-preview";
+import { useAttachmentsOptional } from "./attachment-context";
 import { Context } from "./elements/context";
 import {
   PromptInput,
@@ -28,8 +30,6 @@ import {
   PromptInputTools,
 } from "./elements/prompt-input";
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
-import { AssetPreview } from "./asset-preview";
-import { useAttachmentsOptional } from "./attachment-context";
 import { PreviewAttachment } from "./preview-attachment";
 import { SuggestedActions } from "./suggested-actions";
 import { Button } from "./ui/button";
@@ -359,11 +359,13 @@ function PureMultimodalInput({
 
             {/* Asset attachments from context */}
             {assetAttachments?.attachments.map((asset) => (
-              <div key={asset.assetId} className="relative group">
+              <div className="group relative" key={asset.assetId}>
                 <AssetPreview assetId={asset.assetId} size="sm" />
                 <Button
-                  className="absolute top-0.5 right-0.5 size-4 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => assetAttachments.removeAttachment(asset.assetId)}
+                  className="absolute top-0.5 right-0.5 size-4 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() =>
+                    assetAttachments.removeAttachment(asset.assetId)
+                  }
                   size="sm"
                   variant="destructive"
                 >

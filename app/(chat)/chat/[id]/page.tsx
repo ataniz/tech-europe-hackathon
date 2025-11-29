@@ -55,6 +55,13 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get("chat-model");
 
+  // Check if this is a sub-agent that needs auto-start
+  // (has user message but no assistant response yet)
+  const needsAutoStart =
+    chat.chatType === "sub-agent" &&
+    uiMessages.length === 1 &&
+    uiMessages[0].role === "user";
+
   // Common branch props
   const branchProps = {
     parentChatId: chat.parentChatId ?? undefined,
@@ -63,6 +70,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     chatType: chat.chatType,
     chatStatus: chat.status,
     activeChildCount,
+    autoStartResponse: needsAutoStart,
   };
 
   if (!chatModelFromCookie) {

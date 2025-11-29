@@ -221,6 +221,9 @@ const Sidebar = React.forwardRef<
       );
     }
 
+    const collapsedClass =
+      state === "collapsed" ? (collapsible === "offcanvas" ? "group-data-[collapsible=offcanvas]" : "group-data-[collapsible=icon]") : "";
+
     return (
       <div
         className="group peer hidden text-sidebar-foreground md:block"
@@ -230,7 +233,6 @@ const Sidebar = React.forwardRef<
         data-variant={variant}
         ref={ref}
       >
-        {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
             "relative w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
@@ -243,7 +245,7 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -251,6 +253,9 @@ const Sidebar = React.forwardRef<
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            state === "collapsed"
+              ? "w-[var(--sidebar-width-icon)]"
+              : "w-[var(--sidebar-width)]",
             className
           )}
           {...props}

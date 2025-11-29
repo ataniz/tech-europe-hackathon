@@ -1,11 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  VideoGenerationReferenceType,
   type GenerateVideosConfig,
   type GenerateVideosParameters,
   type Image,
   type VideoGenerationReferenceImage,
+  VideoGenerationReferenceType,
 } from "@google/genai";
 import { createAsset } from "@/lib/db/queries";
 import type { Asset } from "@/lib/db/schema";

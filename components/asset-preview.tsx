@@ -6,8 +6,8 @@ import { createPortal } from "react-dom";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 import {
-  useAttachmentsOptional,
   type ChatAssetAttachment,
+  useAttachmentsOptional,
 } from "./attachment-context";
 import { Button } from "./ui/button";
 
@@ -57,10 +57,10 @@ function FullScreenPreview({
       onClick={onClose}
     >
       <Button
-        variant="ghost"
-        size="sm"
         className="absolute top-4 right-4 text-white hover:bg-white/20"
         onClick={onClose}
+        size="sm"
+        variant="ghost"
       >
         <X className="h-6 w-6" />
       </Button>
@@ -71,29 +71,29 @@ function FullScreenPreview({
       >
         {asset.type === "video" ? (
           <video
-            src={asset.url}
+            autoPlay
             className="max-h-[90vh] max-w-[90vw] overflow-hidden rounded-xl shadow-lg"
             controls
-            autoPlay
+            src={asset.url}
           />
         ) : (
           <img
-            src={asset.url}
             alt={asset.prompt || "Asset"}
             className="max-h-[90vh] max-w-[90vw] overflow-hidden rounded-xl object-contain shadow-lg"
+            src={asset.url}
           />
         )}
 
         {showAttachButton && onAttach && (
           <Button
-            size="sm"
-            variant={isAttached ? "secondary" : "default"}
             className={cn(
-              "absolute top-3 right-3 size-10 p-0 rounded-full shadow-lg shadow-black/50 transition-opacity",
+              "absolute top-3 right-3 size-10 rounded-full p-0 shadow-black/50 shadow-lg transition-opacity",
               isAttached && "bg-green-500 hover:bg-green-600"
             )}
-            onClick={onAttach}
             disabled={isAttached}
+            onClick={onAttach}
+            size="sm"
+            variant={isAttached ? "secondary" : "default"}
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -154,7 +154,7 @@ export function AssetPreview({
     <>
       <div
         className={cn(
-          "group inline-block cursor-pointer transition-transform duration-150 hover:-translate-y-0.5",
+          "group hover:-translate-y-0.5 inline-block cursor-pointer transition-transform duration-150",
           className
         )}
         onClick={() => setIsFullScreen(true)}
@@ -162,41 +162,38 @@ export function AssetPreview({
         <div className="relative inline-flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-card p-1 shadow-sm">
           {asset.type === "video" ? (
             <video
-              src={asset.url}
               className={cn(
                 sizes[size],
-                "rounded-lg object-cover pointer-events-none bg-muted"
+                "pointer-events-none rounded-lg bg-muted object-cover"
               )}
+              src={asset.url}
             />
           ) : (
             <img
-              src={asset.url}
               alt={asset.prompt || "Asset"}
-              className={cn(
-                sizes[size],
-                "rounded-lg object-cover bg-muted"
-              )}
+              className={cn(sizes[size], "rounded-lg bg-muted object-cover")}
+              src={asset.url}
             />
           )}
 
           {showAttachButton && attachmentContext && (
             <Button
+              className={cn(
+                "absolute top-1 right-1 size-6 rounded-full p-0 opacity-0 shadow-md transition-opacity group-hover:opacity-100",
+                "shadow-black/30",
+                isAttached && "bg-green-500 opacity-100 hover:bg-green-600"
+              )}
+              disabled={isAttached}
+              onClick={handleAttach}
               size="sm"
               variant={isAttached ? "secondary" : "default"}
-              className={cn(
-                "absolute top-1 right-1 size-6 p-0 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity",
-                "shadow-black/30",
-                isAttached && "opacity-100 bg-green-500 hover:bg-green-600"
-              )}
-              onClick={handleAttach}
-              disabled={isAttached}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
           )}
 
           {label && (
-            <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm line-clamp-1">
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 line-clamp-1 rounded-md bg-black/60 px-2 py-1 font-medium text-[10px] text-white/90 backdrop-blur-sm">
               {label}
             </div>
           )}
@@ -206,8 +203,6 @@ export function AssetPreview({
       {isFullScreen && asset && (
         <FullScreenPreview
           asset={asset}
-          onClose={() => setIsFullScreen(false)}
-          showAttachButton={showAttachButton && !!attachmentContext}
           isAttached={isAttached}
           onAttach={() => {
             if (attachmentContext && asset) {
@@ -217,6 +212,8 @@ export function AssetPreview({
               } as ChatAssetAttachment);
             }
           }}
+          onClose={() => setIsFullScreen(false)}
+          showAttachButton={showAttachButton && !!attachmentContext}
         />
       )}
     </>

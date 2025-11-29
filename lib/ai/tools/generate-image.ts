@@ -6,8 +6,8 @@ import type { Session } from "next-auth";
 import { z } from "zod";
 import { getAssetsByIds } from "@/lib/db/queries";
 import {
-  generateImage as bananaGenerateImage,
   type AspectRatio,
+  generateImage as bananaGenerateImage,
   type ReferenceImage,
 } from "@/lib/services/google/banana";
 import type { ChatMessage } from "@/lib/types";

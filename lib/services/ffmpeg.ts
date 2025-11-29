@@ -1,7 +1,7 @@
-import { access, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { createAsset } from "@/lib/db/queries";
 import type { Asset } from "@/lib/db/schema";
 import { generateUUID } from "@/lib/utils";
@@ -47,7 +47,7 @@ async function runFfmpeg(args: string[]): Promise<void> {
       reject(
         new Error(
           `ffmpeg exited with code ${code ?? "unknown"}: ${
-            message ? message.slice(-2_000) : "no output"
+            message ? message.slice(-2000) : "no output"
           }`
         )
       );

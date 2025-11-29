@@ -5,6 +5,7 @@
  */
 
 import dotenv from "dotenv";
+
 dotenv.config({ path: ".env.local" });
 
 // We need to mock the database calls since we're running outside Next.js
@@ -93,7 +94,8 @@ async function testVeo() {
 
   const client = await getClient();
 
-  const prompt = "A banana spinning slowly on a white background, smooth motion";
+  const prompt =
+    "A banana spinning slowly on a white background, smooth motion";
   console.log(`Prompt: "${prompt}"`);
 
   const config = {
@@ -202,8 +204,10 @@ async function main() {
 
   console.log("\n" + "=".repeat(50));
   console.log("Results:");
-  if (testImage) console.log(`  Banana (Image): ${imageSuccess ? "✅ PASS" : "❌ FAIL"}`);
-  if (testVideo) console.log(`  Veo (Video):    ${videoSuccess ? "✅ PASS" : "❌ FAIL"}`);
+  if (testImage)
+    console.log(`  Banana (Image): ${imageSuccess ? "✅ PASS" : "❌ FAIL"}`);
+  if (testVideo)
+    console.log(`  Veo (Video):    ${videoSuccess ? "✅ PASS" : "❌ FAIL"}`);
   console.log("=".repeat(50));
 
   process.exit(imageSuccess && videoSuccess ? 0 : 1);

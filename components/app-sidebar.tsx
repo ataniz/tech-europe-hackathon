@@ -71,7 +71,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   setOpenMobile(false);
                 }}
               >
-                <StoryboardIcon size={18} />
+                {/* <StoryboardIcon size={18} /> */}
                 <span className="cursor-pointer font-semibold text-lg">
                   StoryBoarder
                 </span>
@@ -85,23 +85,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     Toggle Sidebar
                   </TooltipContent>
                 </Tooltip>
-                {user && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="h-8 w-8 rounded-md p-1 md:h-fit md:w-8 md:p-2"
-                        onClick={() => setShowDeleteAllDialog(true)}
-                        type="button"
-                        variant="ghost"
-                      >
-                        <TrashIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent align="end" className="hidden md:block">
-                      Delete All Chats
-                    </TooltipContent>
-                  </Tooltip>
-                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

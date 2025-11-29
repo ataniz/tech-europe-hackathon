@@ -6,9 +6,9 @@ import type { Session } from "next-auth";
 import { z } from "zod";
 import { getAssetsByIds } from "@/lib/db/queries";
 import {
-  generateVideo as veoGenerateVideo,
   type ImageInput,
   type VeoAspectRatio,
+  generateVideo as veoGenerateVideo,
 } from "@/lib/services/google/veo";
 import type { ChatMessage } from "@/lib/types";
 

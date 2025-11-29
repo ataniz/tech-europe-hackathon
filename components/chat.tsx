@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
@@ -20,21 +20,26 @@ import {
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import type { SpawnSubAgentsOutput } from "@/lib/ai/tools/spawn-sub-agents";
 import type { ChatStatus, ChatType, Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { AttachmentProvider } from "./attachment-context";
-import { BlockedOverlay } from "./blocked-overlay";
-import { BranchHeader } from "./branch-header";
-import { ReturnPanel } from "./return-panel";
 import type { AppUsage } from "@/lib/usage";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { Artifact } from "./artifact";
+import { AttachmentProvider } from "./attachment-context";
+import { BlockedOverlay } from "./blocked-overlay";
+import { BranchHeader } from "./branch-header";
+import { PlusIcon } from "./icons";
 import { useDataStream } from "./data-stream-provider";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
+import { SidebarToggle } from "./sidebar-toggle";
+import { SpawnProvider } from "./spawn-context";
 import { toast } from "./toast";
+import { Button } from "./ui/button";
+import { useSidebar } from "./ui/sidebar";
 import type { VisibilityType } from "./visibility-selector";
 
 export function Chat({
@@ -44,6 +49,7 @@ export function Chat({
   initialVisibilityType,
   isReadonly,
   autoResume,
+  autoStartResponse,
   initialLastContext,
   parentChatId,
   parentTitle,
@@ -58,6 +64,7 @@ export function Chat({
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
+  autoStartResponse?: boolean;
   initialLastContext?: AppUsage;
   parentChatId?: string;
   parentTitle?: string;
@@ -70,6 +77,8 @@ export function Chat({
     chatId: id,
     initialVisibilityType,
   });
+  const { open: isSidebarOpen } = useSidebar();
+  const router = useRouter();
 
   const { mutate } = useSWRConfig();
   const { setDataStream } = useDataStream();
@@ -92,6 +101,7 @@ export function Chat({
     stop,
     regenerate,
     resumeStream,
+    addToolResult,
   } = useChat<ChatMessage>({
     id,
     messages: initialMessages,
@@ -170,55 +180,95 @@ export function Chat({
     setMessages,
   });
 
+  // Auto-start AI response for sub-agent chats that haven't started yet
+  const [hasAutoStarted, setHasAutoStarted] = useState(false);
+  useEffect(() => {
+    if (autoStartResponse && !hasAutoStarted && status === "ready") {
+      setHasAutoStarted(true);
+      // Trigger AI response - the initial user message is already there
+      sendMessage();
+    }
+  }, [autoStartResponse, hasAutoStarted, status, sendMessage]);
+
+  // Handler for continuing after spawn agents return
+  const handleContinueSpawn = async (
+    _toolCallId: string,
+    output: SpawnSubAgentsOutput
+  ) => {
+    // Build a summary of what the sub-agents returned
+    const agentSummaries = output.agents
+      .map((a) => {
+        const assets = a.returnedAssets?.length
+          ? `Assets: ${a.returnedAssets.join(", ")}`
+          : "No assets";
+        const summary = a.summary || "Task completed";
+        return `- ${a.name}: ${summary} (${assets})`;
+      })
+      .join("\n");
+
+    // Send a user message to continue the conversation with sub-agent results
+    sendMessage({
+      role: "user",
+      parts: [
+        {
+          type: "text",
+          text: `All sub-agents have completed their work. Here are the results:\n\n${agentSummaries}\n\nPlease continue with the next steps.`,
+        },
+      ],
+    });
+  };
+
   return (
     <AttachmentProvider>
       <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
-        <ChatHeader
-          chatId={id}
-          isReadonly={isReadonly}
-          selectedVisibilityType={initialVisibilityType}
-        />
+        {parentChatId ? null : (
+          <ChatHeader
+            chatId={id}
+            isReadonly={isReadonly}
+            selectedVisibilityType={initialVisibilityType}
+          />
+        )}
 
         {parentChatId && (
           <BranchHeader
+            actions={
+              isSidebarOpen ? null : (
+                <div className="flex items-center gap-1">
+                  <SidebarToggle className="h-8 px-2 md:h-fit md:px-2" />
+                  <Button
+                    className="h-8 px-2 md:h-fit md:px-2"
+                    onClick={() => {
+                      router.push("/");
+                      router.refresh();
+                    }}
+                    variant="outline"
+                  >
+                    <PlusIcon />
+                  </Button>
+                </div>
+              )
+            }
+            currentTitle={currentTitle}
             parentChatId={parentChatId}
             parentTitle={parentTitle}
-            currentTitle={currentTitle}
           />
         )}
 
-        <Messages
-          chatId={id}
-          isArtifactVisible={isArtifactVisible}
-          isReadonly={isReadonly}
-          messages={messages}
-          regenerate={regenerate}
-          selectedModelId={initialChatModel}
-          setMessages={setMessages}
-          status={status}
-          votes={votes}
-        />
-
-        {chatType === "sub-agent" && (
-          <ReturnPanel
+        <SpawnProvider onContinueSpawn={handleContinueSpawn}>
+          <Messages
             chatId={id}
-            isFinalized={chatStatus === "finalized"}
-            onReturn={async (assets, summary) => {
-              // Trigger returnToParent tool via chat message
-              sendMessage({
-                role: "user" as const,
-                parts: [
-                  {
-                    type: "text",
-                    text: `Return to parent with assets: ${assets.join(", ")}${summary ? `. Summary: ${summary}` : ""}`,
-                  },
-                ],
-              });
-            }}
+            isArtifactVisible={isArtifactVisible}
+            isReadonly={isReadonly}
+            messages={messages}
+            regenerate={regenerate}
+            selectedModelId={initialChatModel}
+            setMessages={setMessages}
+            status={status}
+            votes={votes}
           />
-        )}
+        </SpawnProvider>
 
-        <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4 relative">
+        <div className="relative sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
           {activeChildCount > 0 && (
             <BlockedOverlay activeCount={activeChildCount} />
           )}

@@ -7,6 +7,7 @@ import { memo, useState } from "react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
+import { AssetPreview } from "./asset-preview";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
@@ -19,13 +20,12 @@ import {
   ToolInput,
   ToolOutput,
 } from "./elements/tool";
-import { StoryboardIcon } from "./icons";
+import { BotIcon, StoryboardIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { SpawnedAgentsCard } from "./spawned-agents-card";
-import { AssetPreview } from "./asset-preview";
 import { Weather } from "./weather";
 
 // Helper to parse JSON message content
@@ -90,7 +90,7 @@ const PurePreviewMessage = ({
       >
         {message.role === "assistant" && (
           <div className="-mt-1 flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200/60 bg-amber-50/70 text-amber-700 shadow-sm dark:border-amber-300/40 dark:bg-amber-400/15 dark:text-amber-100">
-            <StoryboardIcon size={16} />
+            <BotIcon />
           </div>
         )}
 
@@ -131,9 +131,10 @@ const PurePreviewMessage = ({
           {message.parts?.map((part, index) => {
             // Normalize type - handle both "tool-{name}" and "tool-invocation" formats
             const rawType = part.type as string;
-            const type = rawType === "tool-invocation" && (part as any).toolName
-              ? `tool-${(part as any).toolName}`
-              : rawType;
+            const type =
+              rawType === "tool-invocation" && (part as any).toolName
+                ? `tool-${(part as any).toolName}`
+                : rawType;
             const key = `message-${message.id}-part-${index}`;
 
             if (type === "reasoning" && (part as any).text?.trim().length > 0) {
@@ -154,24 +155,23 @@ const PurePreviewMessage = ({
                   message.role === "user"
                     ? parseMessageContent(partText)
                     : { text: partText };
-                const hasUploads =
-                  parsed.uploads && parsed.uploads.length > 0;
+                const hasUploads = parsed.uploads && parsed.uploads.length > 0;
                 const hasAttachments =
                   parsed.attachments && parsed.attachments.length > 0;
 
                 return (
-                  <div key={key} className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2" key={key}>
                     {/* Uploads - shown above the message */}
                     {hasUploads && (
                       <div className="flex flex-row justify-end gap-2">
                         {parsed.uploads?.map((upload) => (
                           <PreviewAttachment
-                            key={upload.url}
                             attachment={{
                               name: upload.name,
                               contentType: upload.contentType,
                               url: upload.url,
                             }}
+                            key={upload.url}
                           />
                         ))}
                       </div>
@@ -179,15 +179,12 @@ const PurePreviewMessage = ({
 
                     {/* Message text */}
                     <MessageContent
-                      className={cn(
-                        "shadow-sm",
-                        {
-                          "w-fit break-words rounded-2xl border border-primary/20 bg-primary px-4 py-3 text-right text-primary-foreground":
-                            message.role === "user",
-                          "w-full max-w-full rounded-2xl border border-border/70 bg-card px-4 py-3 text-left":
-                            message.role === "assistant",
-                        }
-                      )}
+                      className={cn("shadow-sm", {
+                        "w-fit break-words rounded-2xl border border-primary/20 bg-primary px-4 py-3 text-right text-primary-foreground":
+                          message.role === "user",
+                        "w-full max-w-full rounded-2xl border border-border/70 bg-card px-4 py-3 text-left":
+                          message.role === "assistant",
+                      })}
                       data-testid="message-content"
                     >
                       <Response>{sanitizeText(parsed.text)}</Response>
@@ -195,15 +192,15 @@ const PurePreviewMessage = ({
 
                     {/* Attachments - shown below with L-arrow indicator */}
                     {hasAttachments && (
-                      <div className="flex flex-row justify-end items-start gap-2">
-                        <CornerDownRight className="h-4 w-4 text-muted-foreground mt-1" />
+                      <div className="flex flex-row items-start justify-end gap-2">
+                        <CornerDownRight className="mt-1 h-4 w-4 text-muted-foreground" />
                         <div className="flex flex-row gap-2">
                           {parsed.attachments?.map((attachment) => (
                             <AssetPreview
-                              key={attachment.assetId}
                               assetId={attachment.assetId}
-                              size="sm"
+                              key={attachment.assetId}
                               showAttachButton={false}
+                              size="sm"
                             />
                           ))}
                         </div>
@@ -344,26 +341,37 @@ const PurePreviewMessage = ({
               const partAny = part as any;
               const { toolCallId, state } = partAny;
               // Handle both streaming state names and DB-loaded state names
-              const hasOutput = state === "output-available" || state === "result";
+              const hasOutput =
+                state === "output-available" || state === "result";
               const output = partAny.output || partAny.result;
+              const input = partAny.input || partAny.args;
+
+              // Get agents from output (if available) or use input names as placeholders
+              const outputAgents = output?.agents || output?.spawnedChats || [];
+              const inputAgents = input?.agents || [];
+
+              // Use output agents if available, otherwise use input for initial display
+              const initialAgents =
+                outputAgents.length > 0
+                  ? outputAgents.map((c: { id: string; name: string }) => ({
+                      id: c.id,
+                      name: c.name,
+                    }))
+                  : inputAgents.map((a: { name: string }, i: number) => ({
+                      id: `pending-${i}`, // Placeholder ID until real one is available
+                      name: a.name,
+                    }));
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type="tool-spawnSubAgents" />
                   <ToolContent>
-                    {(state === "input-available" || state === "call") && (
-                      <ToolInput input={partAny.input || partAny.args} />
-                    )}
-                    {hasOutput && output?.spawnedChats && (
-                      <SpawnedAgentsCard
-                        agents={output.spawnedChats.map(
-                          (c: { id: string; name: string }) => ({
-                            ...c,
-                            status: "active" as const,
-                          })
-                        )}
-                      />
-                    )}
+                    {/* Always show SpawnedAgentsCard - it will poll for real data */}
+                    <SpawnedAgentsCard
+                      chatId={chatId}
+                      initialAgents={initialAgents}
+                      toolCallId={toolCallId}
+                    />
                   </ToolContent>
                 </Tool>
               );
@@ -376,7 +384,8 @@ const PurePreviewMessage = ({
             ) {
               const partAny = part as any;
               const { toolCallId, state } = partAny;
-              const hasOutput = state === "output-available" || state === "result";
+              const hasOutput =
+                state === "output-available" || state === "result";
               const output = partAny.output || partAny.result;
 
               return (
@@ -387,7 +396,11 @@ const PurePreviewMessage = ({
                       <ToolInput input={partAny.input || partAny.args} />
                     )}
                     {hasOutput && output?.assetId && (
-                      <AssetPreview assetId={output.assetId} size="lg" showAttachButton={true} />
+                      <AssetPreview
+                        assetId={output.assetId}
+                        showAttachButton={true}
+                        size="lg"
+                      />
                     )}
                   </ToolContent>
                 </Tool>
@@ -397,7 +410,8 @@ const PurePreviewMessage = ({
             if (type === "tool-returnToParent") {
               const partAny = part as any;
               const { toolCallId, state } = partAny;
-              const hasOutput = state === "output-available" || state === "result";
+              const hasOutput =
+                state === "output-available" || state === "result";
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
@@ -410,7 +424,7 @@ const PurePreviewMessage = ({
                       <ToolOutput
                         errorText={undefined}
                         output={
-                          <div className="text-sm text-green-600">
+                          <div className="text-green-600 text-sm">
                             ✓ Returned to parent chat
                           </div>
                         }
@@ -478,7 +492,7 @@ export const ThinkingMessage = () => {
     >
       <div className="flex items-start justify-start gap-3">
         <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-          <SparklesIcon size={14} />
+          <BotIcon />
         </div>
 
         <div className="flex w-full flex-col gap-2 md:gap-4">

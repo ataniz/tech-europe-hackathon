@@ -35,50 +35,50 @@ export const StoryboardIcon = ({ size = 16 }: { size?: number }) => {
         d="M4 6.5A1.5 1.5 0 0 1 5.5 5H18.5A1.5 1.5 0 0 1 20 6.5V18.5A1.5 1.5 0 0 1 18.5 20H5.5A1.5 1.5 0 0 1 4 18.5Z"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinejoin="round"
+        strokeWidth="1.6"
       />
       <path
         d="M4 9H20"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M8 5V9"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M12 5V9"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M16 5V9"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M8 13H11"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M13 13H16"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
       <path
         d="M8 16H13"
         stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
+        strokeWidth="1.6"
       />
     </svg>
   );

@@ -218,42 +218,52 @@ export async function POST(request: Request) {
       country,
     };
 
-    await saveMessages({
-      messages: [
-        {
-          chatId: id,
-          id: message.id,
-          role: "user",
-          parts: message.parts,
-          attachments: [],
-          createdAt: new Date(),
-        },
-      ],
-    });
+    // Check if this message already exists (e.g., for sub-agent auto-start)
+    const existingMessage = messagesFromDb.find((m) => m.id === message.id);
+    if (!existingMessage) {
+      await saveMessages({
+        messages: [
+          {
+            chatId: id,
+            id: message.id,
+            role: "user",
+            parts: message.parts,
+            attachments: [],
+            createdAt: new Date(),
+          },
+        ],
+      });
+    }
 
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
     let finalMergedUsage: AppUsage | undefined;
 
+    // Determine active tools based on chat type
+    const isSubAgent = chat?.chatType === "sub-agent";
+    const activeTools: (
+      | "getWeather"
+      | "createDocument"
+      | "updateDocument"
+      | "requestSuggestions"
+      | "spawnSubAgents"
+      | "concatenateVideos"
+      | "generateImage"
+      | "generateVideo"
+      | "returnToParent"
+    )[] = isSubAgent
+      ? ["generateImage", "generateVideo", "returnToParent"]
+      : ["spawnSubAgents", "generateImage", "generateVideo", "concatenateVideos"];
+
     const stream = createUIMessageStream({
       execute: ({ writer: dataStream }) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: systemPrompt({ selectedChatModel, requestHints, isSubAgent }),
           messages: convertToModelMessages(resolvedMessages),
           stopWhen: stepCountIs(5),
-          experimental_activeTools: [
-            "getWeather",
-            "createDocument",
-            "updateDocument",
-            "requestSuggestions",
-            "spawnSubAgents",
-            "generateImage",
-            "generateVideo",
-            "concatenateVideos",
-            "returnToParent",
-          ],
+          experimental_activeTools: activeTools,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: {
             getWeather,
