@@ -23,6 +23,8 @@ import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
+import { SpawnedAgentsCard } from "./spawned-agents-card";
+import { AssetPreview } from "./asset-preview";
 import { Weather } from "./weather";
 
 const PurePreviewMessage = ({
@@ -259,6 +261,74 @@ const PurePreviewMessage = ({
                               type="request-suggestions"
                             />
                           )
+                        }
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === "tool-spawnSubAgents") {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type="tool-spawnSubAgents" />
+                  <ToolContent>
+                    {state === "input-available" && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === "output-available" && part.output?.spawnedChats && (
+                      <SpawnedAgentsCard
+                        agents={part.output.spawnedChats.map(
+                          (c: { id: string; name: string }) => ({
+                            ...c,
+                            status: "active" as const,
+                          })
+                        )}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === "tool-generateImage" || type === "tool-generateVideo") {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type={type} />
+                  <ToolContent>
+                    {state === "input-available" && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === "output-available" && part.output?.assetId && (
+                      <AssetPreview assetId={part.output.assetId} size="lg" />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === "tool-returnToParent") {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type="tool-returnToParent" />
+                  <ToolContent>
+                    {state === "input-available" && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === "output-available" && (
+                      <ToolOutput
+                        errorText={undefined}
+                        output={
+                          <div className="text-sm text-green-600">
+                            ✓ Returned to parent chat
+                          </div>
                         }
                       />
                     )}

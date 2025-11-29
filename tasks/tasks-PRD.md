@@ -16,8 +16,14 @@ Generated from `PRD.md`
 - `lib/ai/tools/return-to-parent.ts` – ✅ Tool to return results to parent chat
 - `lib/types.ts` – ✅ Extended with new tool types and CustomUIDataTypes
 - `app/(chat)/api/chat/route.ts` – ✅ Registered 4 new tools
-- `lib/errors.ts` – Add blocked:orchestrator error type
-- `app/(chat)/api/assets/route.ts` – Asset CRUD API endpoints
+- `lib/errors.ts` – ✅ Added blocked:orchestrator error type
+- `app/(chat)/api/assets/route.ts` – ✅ Asset GET API endpoint (by id or chatId)
+- `components/asset-preview.tsx` – ✅ Render image/video by asset UUID
+- `components/spawned-agents-card.tsx` – ✅ Show spawned branches with status
+- `components/return-panel.tsx` – ✅ UI for selecting assets and returning
+- `components/branch-header.tsx` – ✅ Header showing parent relationship
+- `components/blocked-overlay.tsx` – ✅ Overlay when orchestrator is waiting
+- `components/message.tsx` – ✅ Added tool renderers for new tools
 - `app/(chat)/chat/[id]/page.tsx` – Add branch UI components
 - `components/asset-preview.tsx` – Render image/video by UUID
 - `components/spawned-agents-card.tsx` – Show spawned branches with status
@@ -55,15 +61,16 @@ Generated from `PRD.md`
     - [x] 3.3 Add finalization logic: when orchestrator continues after all returns, call finalizeChildChats
     - [x] 3.4 Filter sub-agent chats from sidebar query in history API
 
-- [ ] 4.0 UI Components
-    - [ ] 4.1 Create `components/asset-preview.tsx` – fetches asset by ID, renders image or video, supports sm/md/lg sizes
-    - [ ] 4.2 Create `components/spawned-agents-card.tsx` – displays branches with status indicators, progress count, clickable navigation
-    - [ ] 4.3 Create `components/return-panel.tsx` – asset selector checkboxes, optional summary input, Return button, disabled when finalized
-    - [ ] 4.4 Create `components/branch-header.tsx` – shows "Branch of [Parent]" with back navigation button
-    - [ ] 4.5 Create `components/blocked-overlay.tsx` – overlay on input showing "Waiting for N branches..."
-    - [ ] 4.6 Create `components/attachment-bar.tsx` – horizontal list of attached assets with remove buttons
-    - [ ] 4.7 Create `components/asset-picker.tsx` – modal to browse and select chat assets for attachment
-    - [ ] 4.8 Create `app/(chat)/api/assets/route.ts` – GET (by id or chatId) and POST endpoints
+- [x] 4.0 UI Components
+    - [x] 4.1 Create `components/asset-preview.tsx` – fetches asset by ID, renders image or video, supports sm/md/lg sizes
+    - [x] 4.2 Create `components/spawned-agents-card.tsx` – displays branches with status indicators, progress count, clickable navigation
+    - [x] 4.3 Create `components/return-panel.tsx` – asset selector with click-based selection, optional summary input, Return button, disabled when finalized
+    - [x] 4.4 Create `components/branch-header.tsx` – shows "Branch of [Parent]" with back navigation button
+    - [x] 4.5 Create `components/blocked-overlay.tsx` – overlay on input showing "Waiting for N branches..."
+    - [x] 4.6 Wire tool renderers in `components/message.tsx` – spawnSubAgents, generateImage, generateVideo, returnToParent
+    - [x] 4.7 Create `app/(chat)/api/assets/route.ts` – GET (by id or chatId) endpoint
+    - [ ] 4.8 (Deferred) Create `components/attachment-bar.tsx` – horizontal list of attached assets with remove buttons
+    - [ ] 4.9 (Deferred) Create `components/asset-picker.tsx` – modal to browse and select chat assets for attachment
 
 - [ ] 5.0 Integration & Wiring
     - [ ] 5.1 Update `components/elements/message.tsx` to parse JSON user messages and render AssetPreview for attachments
