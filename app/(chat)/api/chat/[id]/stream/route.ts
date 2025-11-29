@@ -53,13 +53,15 @@ export async function GET(
   const streamIds = await getStreamIdsByChatId({ chatId });
 
   if (!streamIds.length) {
-    return new ChatSDKError("not_found:stream").toResponse();
+    // No stream exists yet (e.g., newly created sub-agent chat)
+    // Return 204 to let auto-resume gracefully skip
+    return new Response(null, { status: 204 });
   }
 
   const recentStreamId = streamIds.at(-1);
 
   if (!recentStreamId) {
-    return new ChatSDKError("not_found:stream").toResponse();
+    return new Response(null, { status: 204 });
   }
 
   const emptyDataStream = createUIMessageStream<ChatMessage>({

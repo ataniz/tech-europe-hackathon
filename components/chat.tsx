@@ -23,6 +23,7 @@ import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import type { ChatStatus, ChatType, Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
+import { AttachmentProvider } from "./attachment-context";
 import { BlockedOverlay } from "./blocked-overlay";
 import { BranchHeader } from "./branch-header";
 import { ReturnPanel } from "./return-panel";
@@ -46,6 +47,7 @@ export function Chat({
   initialLastContext,
   parentChatId,
   parentTitle,
+  currentTitle,
   chatType,
   chatStatus,
   activeChildCount = 0,
@@ -59,6 +61,7 @@ export function Chat({
   initialLastContext?: AppUsage;
   parentChatId?: string;
   parentTitle?: string;
+  currentTitle?: string;
   chatType?: ChatType;
   chatStatus?: ChatStatus;
   activeChildCount?: number;
@@ -168,7 +171,7 @@ export function Chat({
   });
 
   return (
-    <>
+    <AttachmentProvider>
       <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
         <ChatHeader
           chatId={id}
@@ -177,7 +180,11 @@ export function Chat({
         />
 
         {parentChatId && (
-          <BranchHeader parentChatId={parentChatId} parentTitle={parentTitle} />
+          <BranchHeader
+            parentChatId={parentChatId}
+            parentTitle={parentTitle}
+            currentTitle={currentTitle}
+          />
         )}
 
         <Messages
@@ -283,6 +290,6 @@ export function Chat({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </AttachmentProvider>
   );
 }

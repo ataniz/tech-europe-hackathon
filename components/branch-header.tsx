@@ -1,15 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, GitBranch } from "lucide-react";
+import { ChevronRight, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type BranchHeaderProps = {
   parentChatId: string;
   parentTitle?: string;
+  currentTitle?: string;
 };
 
-export function BranchHeader({ parentChatId, parentTitle }: BranchHeaderProps) {
+export function BranchHeader({
+  parentChatId,
+  parentTitle,
+  currentTitle,
+}: BranchHeaderProps) {
   const router = useRouter();
 
   return (
@@ -19,12 +24,15 @@ export function BranchHeader({ parentChatId, parentTitle }: BranchHeaderProps) {
       <Button
         variant="link"
         size="sm"
-        className="p-0 h-auto"
+        className="p-0 h-auto text-sm"
         onClick={() => router.push(`/chat/${parentChatId}`)}
       >
-        <ArrowLeft className="h-3 w-3 mr-1" />
         {parentTitle || "Parent Chat"}
       </Button>
+      <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      <span className="text-sm font-medium truncate">
+        {currentTitle || "Sub-agent"}
+      </span>
     </div>
   );
 }

@@ -28,10 +28,10 @@ Generated from `PRD.md`
 - `components/chat.tsx` – ✅ Renders BranchHeader, ReturnPanel, BlockedOverlay based on chat type
 - `components/data-stream-handler.tsx` – ✅ Handles auto-navigation on branch return
 - `public/uploads/assets/` – ✅ Directory for local asset storage
-- `components/attachment-bar.tsx` – (Deferred) Show attached assets in input area
-- `components/asset-picker.tsx` – (Deferred) Modal to select assets for attachment
-- `components/elements/message.tsx` – (Deferred) Parse JSON user messages, render assets
-- `components/elements/prompt-input.tsx` – (Deferred) Add attachment support
+- `components/attachment-context.tsx` – ✅ NEW - Context for managing asset attachments
+- `components/asset-preview.tsx` – ✅ Updated with attach button
+- `components/multimodal-input.tsx` – ✅ Updated to use attachment context and send JSON format
+- `components/message.tsx` – ✅ Updated to parse JSON user messages, render uploads above and attachments below with L-arrow
 
 ---
 
@@ -71,8 +71,8 @@ Generated from `PRD.md`
     - [ ] 4.9 (Deferred) Create `components/asset-picker.tsx` – modal to browse and select chat assets for attachment
 
 - [x] 5.0 Integration & Wiring
-    - [ ] 5.1 (Deferred) Update `components/elements/message.tsx` to parse JSON user messages and render AssetPreview for attachments
-    - [ ] 5.2 (Deferred) Update `components/elements/prompt-input.tsx` to support attachments state and include AttachmentBar
+    - [x] 5.1 Update `components/message.tsx` to parse JSON user messages and render AssetPreview for attachments
+    - [x] 5.2 Update `components/multimodal-input.tsx` to support asset attachments via context
     - [x] 5.3 Update `app/(chat)/chat/[id]/page.tsx` to fetch branching metadata and pass to Chat
     - [x] 5.4 Update `components/chat.tsx` to show ReturnPanel for sub-agent chats
     - [x] 5.5 Update `components/chat.tsx` to show BlockedOverlay when orchestrator is blocked

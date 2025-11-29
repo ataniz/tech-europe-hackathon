@@ -42,6 +42,8 @@ import {
   PaperclipIcon,
   StopIcon,
 } from "./icons";
+import { AssetPreview } from "./asset-preview";
+import { useAttachmentsOptional } from "./attachment-context";
 import { PreviewAttachment } from "./preview-attachment";
 import { SuggestedActions } from "./suggested-actions";
 import { Button } from "./ui/button";
@@ -82,6 +84,7 @@ function PureMultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const assetAttachments = useAttachmentsOptional();
 
   const adjustHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -132,9 +135,27 @@ function PureMultimodalInput({
   const submitForm = useCallback(() => {
     window.history.pushState({}, "", `/chat/${chatId}`);
 
+    // Build JSON message content with uploads (file attachments) and attachments (asset refs)
+    const contextAttachments = assetAttachments?.attachments || [];
+    const messageContent = {
+      text: input,
+      // uploads = file attachments (images pasted/uploaded) - include full info for model
+      uploads: attachments.map((a) => ({
+        url: a.url,
+        name: a.name,
+        contentType: a.contentType,
+      })),
+      // attachments = asset references (from chat assets) - only IDs for model
+      attachments: contextAttachments.map((a) => ({
+        assetId: a.assetId,
+        type: a.type,
+      })),
+    };
+
     sendMessage({
       role: "user",
       parts: [
+        // Still include file parts for the model to see uploaded images
         ...attachments.map((attachment) => ({
           type: "file" as const,
           url: attachment.url,
@@ -143,12 +164,13 @@ function PureMultimodalInput({
         })),
         {
           type: "text",
-          text: input,
+          text: JSON.stringify(messageContent),
         },
       ],
     });
 
     setAttachments([]);
+    assetAttachments?.clearAttachments();
     setLocalStorageInput("");
     resetHeight();
     setInput("");
@@ -160,6 +182,7 @@ function PureMultimodalInput({
     input,
     setInput,
     attachments,
+    assetAttachments,
     sendMessage,
     setAttachments,
     setLocalStorageInput,
@@ -318,11 +341,14 @@ function PureMultimodalInput({
           }
         }}
       >
-        {(attachments.length > 0 || uploadQueue.length > 0) && (
+        {(attachments.length > 0 ||
+          uploadQueue.length > 0 ||
+          (assetAttachments?.attachments.length ?? 0) > 0) && (
           <div
             className="flex flex-row items-end gap-2 overflow-x-scroll"
             data-testid="attachments-preview"
           >
+            {/* File uploads */}
             {attachments.map((attachment) => (
               <PreviewAttachment
                 attachment={attachment}
@@ -338,6 +364,7 @@ function PureMultimodalInput({
               />
             ))}
 
+            {/* Upload queue */}
             {uploadQueue.map((filename) => (
               <PreviewAttachment
                 attachment={{
@@ -348,6 +375,21 @@ function PureMultimodalInput({
                 isUploading={true}
                 key={filename}
               />
+            ))}
+
+            {/* Asset attachments from context */}
+            {assetAttachments?.attachments.map((asset) => (
+              <div key={asset.assetId} className="relative group">
+                <AssetPreview assetId={asset.assetId} size="sm" />
+                <Button
+                  className="absolute top-0.5 right-0.5 size-4 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => assetAttachments.removeAttachment(asset.assetId)}
+                  size="sm"
+                  variant="destructive"
+                >
+                  <span className="text-[8px]">✕</span>
+                </Button>
+              </div>
             ))}
           </div>
         )}

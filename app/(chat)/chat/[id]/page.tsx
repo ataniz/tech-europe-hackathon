@@ -59,6 +59,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const branchProps = {
     parentChatId: chat.parentChatId ?? undefined,
     parentTitle: parentChat?.title,
+    currentTitle: chat.title,
     chatType: chat.chatType,
     chatStatus: chat.status,
     activeChildCount,

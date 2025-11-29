@@ -1,6 +1,7 @@
 import { tool, type UIMessageStreamWriter } from "ai";
 import type { Session } from "next-auth";
 import { z } from "zod";
+import { triggerSubAgentResponse } from "@/lib/ai/trigger-sub-agent";
 import {
   createSubAgentChat,
   getMessagesByChatId,
@@ -45,14 +46,23 @@ export const spawnSubAgents = ({
       // 1. Update current chat type to 'orchestrator'
       await updateChatType(chatId, "orchestrator");
 
-      // 2. Get parent message history (for system prompt context - used later)
+      // 2. Get parent message history for context
       const parentMessages = await getMessagesByChatId({ id: chatId });
-      const _historyText = parentMessages
-        .map((m) => `${m.role}: ${JSON.stringify(m.parts)}`)
+      const parentContext = parentMessages
+        .map((m) => {
+          const parts = m.parts as Array<{ type: string; text?: string }>;
+          const content = parts
+            .filter((p) => p.type === "text" && p.text)
+            .map((p) => p.text)
+            .join(" ");
+          return `${m.role}: ${content}`;
+        })
         .join("\n");
 
-      // 3. Create sub-agent chats
+      // 3. Create sub-agent chats and trigger AI responses
       const spawnedChats = [];
+      const triggerPromises = [];
+
       for (const agent of agents) {
         const subChat = await createSubAgentChat({
           parentChatId: chatId,
@@ -60,19 +70,14 @@ export const spawnSubAgents = ({
           userId: session.user.id,
         });
 
-        // Create first user message with brief
-        const userMessage = {
-          text: agent.brief,
-          attachments: agent.referenceAssets || [],
-        };
-
+        // Create first user message with brief (plain text, not JSON)
         await saveMessages({
           messages: [
             {
               id: generateUUID(),
               chatId: subChat.id,
               role: "user",
-              parts: [{ type: "text", text: JSON.stringify(userMessage) }],
+              parts: [{ type: "text", text: agent.brief }],
               attachments: [],
               createdAt: new Date(),
             },
@@ -81,8 +86,20 @@ export const spawnSubAgents = ({
 
         spawnedChats.push({ id: subChat.id, name: agent.name });
 
-        // TODO: Trigger AI response in background (Phase 5)
+        // Trigger AI response in background (fire-and-forget)
+        triggerPromises.push(
+          triggerSubAgentResponse({
+            chatId: subChat.id,
+            session,
+            parentContext: `## Parent Conversation Context\n${parentContext}`,
+          })
+        );
       }
+
+      // Fire all sub-agent triggers without waiting
+      Promise.all(triggerPromises).catch((err) =>
+        console.error("Error triggering sub-agents:", err)
+      );
 
       // 4. Write to dataStream for UI update
       dataStream.write({

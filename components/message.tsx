@@ -2,6 +2,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
 import { motion } from "framer-motion";
+import { CornerDownRight } from "lucide-react";
 import { memo, useState } from "react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -26,6 +27,25 @@ import { PreviewAttachment } from "./preview-attachment";
 import { SpawnedAgentsCard } from "./spawned-agents-card";
 import { AssetPreview } from "./asset-preview";
 import { Weather } from "./weather";
+
+// Helper to parse JSON message content
+type ParsedMessageContent = {
+  text: string;
+  uploads?: Array<{ url: string; name: string; contentType: string }>;
+  attachments?: Array<{ assetId: string; type: string }>;
+};
+
+function parseMessageContent(text: string): ParsedMessageContent {
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed === "object" && parsed !== null && "text" in parsed) {
+      return parsed as ParsedMessageContent;
+    }
+  } catch {
+    // Not JSON, return as plain text
+  }
+  return { text };
+}
 
 const PurePreviewMessage = ({
   chatId,
@@ -109,23 +129,55 @@ const PurePreviewMessage = ({
           )}
 
           {message.parts?.map((part, index) => {
-            const { type } = part;
+            // Normalize type - handle both "tool-{name}" and "tool-invocation" formats
+            const rawType = part.type as string;
+            const type = rawType === "tool-invocation" && (part as any).toolName
+              ? `tool-${(part as any).toolName}`
+              : rawType;
             const key = `message-${message.id}-part-${index}`;
 
-            if (type === "reasoning" && part.text?.trim().length > 0) {
+            if (type === "reasoning" && (part as any).text?.trim().length > 0) {
               return (
                 <MessageReasoning
                   isLoading={isLoading}
                   key={key}
-                  reasoning={part.text}
+                  reasoning={(part as any).text}
                 />
               );
             }
 
             if (type === "text") {
               if (mode === "view") {
+                // Parse JSON message content for user messages
+                const partText = (part as any).text as string;
+                const parsed =
+                  message.role === "user"
+                    ? parseMessageContent(partText)
+                    : { text: partText };
+                const hasUploads =
+                  parsed.uploads && parsed.uploads.length > 0;
+                const hasAttachments =
+                  parsed.attachments && parsed.attachments.length > 0;
+
                 return (
-                  <div key={key}>
+                  <div key={key} className="flex flex-col gap-2">
+                    {/* Uploads - shown above the message */}
+                    {hasUploads && (
+                      <div className="flex flex-row justify-end gap-2">
+                        {parsed.uploads?.map((upload) => (
+                          <PreviewAttachment
+                            key={upload.url}
+                            attachment={{
+                              name: upload.name,
+                              contentType: upload.contentType,
+                              url: upload.url,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Message text */}
                     <MessageContent
                       className={cn({
                         "w-fit break-words rounded-2xl px-3 py-2 text-right text-white":
@@ -140,8 +192,25 @@ const PurePreviewMessage = ({
                           : undefined
                       }
                     >
-                      <Response>{sanitizeText(part.text)}</Response>
+                      <Response>{sanitizeText(parsed.text)}</Response>
                     </MessageContent>
+
+                    {/* Attachments - shown below with L-arrow indicator */}
+                    {hasAttachments && (
+                      <div className="flex flex-row justify-end items-start gap-2">
+                        <CornerDownRight className="h-4 w-4 text-muted-foreground mt-1" />
+                        <div className="flex flex-row gap-2">
+                          {parsed.attachments?.map((attachment) => (
+                            <AssetPreview
+                              key={attachment.assetId}
+                              assetId={attachment.assetId}
+                              size="sm"
+                              showAttachButton={false}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               }
@@ -168,19 +237,20 @@ const PurePreviewMessage = ({
             }
 
             if (type === "tool-getWeather") {
-              const { toolCallId, state } = part;
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type="tool-getWeather" />
                   <ToolContent>
                     {state === "input-available" && (
-                      <ToolInput input={part.input} />
+                      <ToolInput input={partAny.input} />
                     )}
                     {state === "output-available" && (
                       <ToolOutput
                         errorText={undefined}
-                        output={<Weather weatherAtLocation={part.output} />}
+                        output={<Weather weatherAtLocation={partAny.output} />}
                       />
                     )}
                   </ToolContent>
@@ -189,15 +259,16 @@ const PurePreviewMessage = ({
             }
 
             if (type === "tool-createDocument") {
-              const { toolCallId } = part;
+              const partAny = part as any;
+              const { toolCallId } = partAny;
 
-              if (part.output && "error" in part.output) {
+              if (partAny.output && "error" in partAny.output) {
                 return (
                   <div
                     className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
                     key={toolCallId}
                   >
-                    Error creating document: {String(part.output.error)}
+                    Error creating document: {String(partAny.output.error)}
                   </div>
                 );
               }
@@ -206,21 +277,22 @@ const PurePreviewMessage = ({
                 <DocumentPreview
                   isReadonly={isReadonly}
                   key={toolCallId}
-                  result={part.output}
+                  result={partAny.output}
                 />
               );
             }
 
             if (type === "tool-updateDocument") {
-              const { toolCallId } = part;
+              const partAny = part as any;
+              const { toolCallId } = partAny;
 
-              if (part.output && "error" in part.output) {
+              if (partAny.output && "error" in partAny.output) {
                 return (
                   <div
                     className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
                     key={toolCallId}
                   >
-                    Error updating document: {String(part.output.error)}
+                    Error updating document: {String(partAny.output.error)}
                   </div>
                 );
               }
@@ -228,36 +300,37 @@ const PurePreviewMessage = ({
               return (
                 <div className="relative" key={toolCallId}>
                   <DocumentPreview
-                    args={{ ...part.output, isUpdate: true }}
+                    args={{ ...partAny.output, isUpdate: true }}
                     isReadonly={isReadonly}
-                    result={part.output}
+                    result={partAny.output}
                   />
                 </div>
               );
             }
 
             if (type === "tool-requestSuggestions") {
-              const { toolCallId, state } = part;
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type="tool-requestSuggestions" />
                   <ToolContent>
                     {state === "input-available" && (
-                      <ToolInput input={part.input} />
+                      <ToolInput input={partAny.input} />
                     )}
                     {state === "output-available" && (
                       <ToolOutput
                         errorText={undefined}
                         output={
-                          "error" in part.output ? (
+                          "error" in partAny.output ? (
                             <div className="rounded border p-2 text-red-500">
-                              Error: {String(part.output.error)}
+                              Error: {String(partAny.output.error)}
                             </div>
                           ) : (
                             <DocumentToolResult
                               isReadonly={isReadonly}
-                              result={part.output}
+                              result={partAny.output}
                               type="request-suggestions"
                             />
                           )
@@ -270,18 +343,22 @@ const PurePreviewMessage = ({
             }
 
             if (type === "tool-spawnSubAgents") {
-              const { toolCallId, state } = part;
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
+              // Handle both streaming state names and DB-loaded state names
+              const hasOutput = state === "output-available" || state === "result";
+              const output = partAny.output || partAny.result;
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type="tool-spawnSubAgents" />
                   <ToolContent>
-                    {state === "input-available" && (
-                      <ToolInput input={part.input} />
+                    {(state === "input-available" || state === "call") && (
+                      <ToolInput input={partAny.input || partAny.args} />
                     )}
-                    {state === "output-available" && part.output?.spawnedChats && (
+                    {hasOutput && output?.spawnedChats && (
                       <SpawnedAgentsCard
-                        agents={part.output.spawnedChats.map(
+                        agents={output.spawnedChats.map(
                           (c: { id: string; name: string }) => ({
                             ...c,
                             status: "active" as const,
@@ -295,17 +372,20 @@ const PurePreviewMessage = ({
             }
 
             if (type === "tool-generateImage" || type === "tool-generateVideo") {
-              const { toolCallId, state } = part;
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
+              const hasOutput = state === "output-available" || state === "result";
+              const output = partAny.output || partAny.result;
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type={type} />
                   <ToolContent>
-                    {state === "input-available" && (
-                      <ToolInput input={part.input} />
+                    {(state === "input-available" || state === "call") && (
+                      <ToolInput input={partAny.input || partAny.args} />
                     )}
-                    {state === "output-available" && part.output?.assetId && (
-                      <AssetPreview assetId={part.output.assetId} size="lg" />
+                    {hasOutput && output?.assetId && (
+                      <AssetPreview assetId={output.assetId} size="lg" showAttachButton={true} />
                     )}
                   </ToolContent>
                 </Tool>
@@ -313,16 +393,18 @@ const PurePreviewMessage = ({
             }
 
             if (type === "tool-returnToParent") {
-              const { toolCallId, state } = part;
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
+              const hasOutput = state === "output-available" || state === "result";
 
               return (
                 <Tool defaultOpen={true} key={toolCallId}>
                   <ToolHeader state={state} type="tool-returnToParent" />
                   <ToolContent>
-                    {state === "input-available" && (
-                      <ToolInput input={part.input} />
+                    {(state === "input-available" || state === "call") && (
+                      <ToolInput input={partAny.input || partAny.args} />
                     )}
-                    {state === "output-available" && (
+                    {hasOutput && (
                       <ToolOutput
                         errorText={undefined}
                         output={
