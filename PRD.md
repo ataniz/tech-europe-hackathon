@@ -189,7 +189,6 @@ export async function createSubAgentChat(params: {
   parentChatId: string;
   title: string;
   userId: string;
-  brief: string;
 }): Promise<Chat>;
 ```
 
@@ -205,21 +204,24 @@ export async function createSubAgentChat(params: {
 import { tool } from "ai";
 import { z } from "zod";
 
-export const spawnSubAgents = ({ session, dataStream }) => tool({
-  description: "Spawn parallel sub-agent chats to work on separate tasks. Each sub-agent receives the conversation history and a specific brief.",
+export const spawnSubAgents = ({ session, dataStream, chatId }) => tool({
+  description: "Spawn parallel sub-agent chats to work on separate tasks. Each sub-agent receives context and a specific brief.",
   inputSchema: z.object({
     agents: z.array(z.object({
       name: z.string().describe("Name/title for this sub-agent branch"),
       brief: z.string().describe("The specific task/brief for this sub-agent"),
+      referenceAssets: z.array(z.string()).optional()
+        .describe("Asset UUIDs to include as references for this sub-agent"),
     })).min(1).max(10),
   }),
   execute: async ({ agents }) => {
     // 1. Get current chat, update type to 'orchestrator'
-    // 2. Get full message history
+    // 2. Get full message history as newline-separated text
     // 3. For each agent:
-    //    - Create new chat with parentChatId set
-    //    - Copy message history
-    //    - Store brief in first system message or metadata
+    //    a. Create new chat with parentChatId set, type: 'sub-agent'
+    //    b. Build system prompt: SUB_AGENT_SYSTEM_PROMPT + parent history context
+    //    c. Create first user message with brief text + referenceAssets as attachments
+    //    d. Trigger AI response immediately (background)
     // 4. Write to dataStream for UI update
     // 5. Return spawned chat info
 
@@ -318,9 +320,45 @@ export const returnToParent = ({ session, dataStream, chatId }) => tool({
 
 ---
 
-## 5. System Prompts
+## 5. System Prompts & Sub-Agent Initialization
 
-### 5.1 Sub-Agent Default Prompt
+### 5.1 Sub-Agent Creation Flow
+
+```
+spawnSubAgents called
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│ For each agent:                                     │
+│                                                     │
+│ 1. Create Chat record                               │
+│    - parentChatId: current chat                     │
+│    - type: 'sub-agent'                              │
+│    - title: agent.name                              │
+│                                                     │
+│ 2. Build SYSTEM PROMPT:                             │
+│    - SUB_AGENT_SYSTEM_PROMPT (base)                 │
+│    - Parent history (all messages, newline-joined)  │
+│                                                     │
+│ 3. Create FIRST USER MESSAGE:                       │
+│    - text: agent.brief                              │
+│    - attachments: agent.referenceAssets             │
+│                                                     │
+│ 4. TRIGGER AI RESPONSE (background, don't wait)    │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+Sub-agent chat starts with AI already responding
+User clicks in → sees conversation in progress
+```
+
+**Key behaviors:**
+- Sub-agent chats do NOT appear in sidebar (only accessible via SpawnedAgentsCard)
+- Sub-agent shows only its own messages (no parent history in UI)
+- Parent history is embedded in system prompt as context
+- After finalization, sub-agent chats become read-only but still viewable
+
+### 5.2 Sub-Agent Default Prompt
 
 **File**: `lib/ai/prompts.ts` (add to existing)
 
@@ -328,7 +366,7 @@ export const returnToParent = ({ session, dataStream, chatId }) => tool({
 export const SUB_AGENT_SYSTEM_PROMPT = `You are a creative sub-agent working on a specific scene or task within a larger storyboard project.
 
 Your role:
-- Focus on the brief provided to you
+- Focus on the brief provided in the first message
 - Generate images and videos as needed using the available tools
 - Be creative but stay aligned with the overall project direction
 - When your task is complete, use returnToParent to send your results back
@@ -338,7 +376,12 @@ You have access to:
 - generateVideo: Create videos based on prompts
 - returnToParent: Complete your task and return results
 
-The conversation history shows the context from the main project. Use this to inform your creative decisions.`;
+## Parent Conversation Context
+The following is the conversation history from the main orchestrator chat:
+
+`;
+
+// Usage: systemPrompt = SUB_AGENT_SYSTEM_PROMPT + parentHistoryText
 ```
 
 ---
@@ -598,11 +641,17 @@ components/
 app/
 └── (chat)/
     ├── api/
+    │   ├── assets/
+    │   │   └── route.ts       [NEW] Asset CRUD endpoints (GET, POST)
     │   └── chat/
     │       └── route.ts       [MODIFY] Add tools, blocking logic
     └── chat/
         └── [id]/
             └── page.tsx       [MODIFY] Add branch UI components
+
+public/
+└── uploads/
+    └── assets/                [NEW] Local asset storage directory
 ```
 
 ---
@@ -661,17 +710,20 @@ app/
 1. User: "Create a 3-scene storyboard about a cat astronaut"
 2. AI plans scenes, spawns 3 sub-agents
 3. UI shows 3 branches with "0/3 returned"
-4. User clicks into Scene 1 branch
+4. User clicks into Scene 1 branch → AI already responding/working
 5. User interacts, AI generates images
 6. User clicks Return with selected assets
 7. Auto-navigates to parent, shows "1/3 returned"
 8. Repeat for remaining scenes
-9. All return → AI continues with combined results
-10. Final storyboard summary with all assets
+9. All return → orchestrator input unblocks
+10. User continues → AI provides final storyboard summary
 
 **Technical Criteria**:
-- [ ] Sub-agents spawn with full history
+- [ ] Sub-agents spawn and auto-start AI response (background)
+- [ ] Sub-agents do NOT appear in sidebar
+- [ ] Parent history passed via system prompt (not displayed in UI)
 - [ ] Assets display correctly in messages
-- [ ] Blocking prevents orchestrator messages
-- [ ] Returns are editable until finalized
+- [ ] Blocking prevents orchestrator messages until all return
+- [ ] Returns are editable until parent continues (then finalized)
+- [ ] Finalized sub-agents are read-only but viewable
 - [ ] Navigation works both directions

@@ -1,9 +1,5 @@
 import { google } from "@ai-sdk/google";
-import {
-  customProvider,
-  extractReasoningMiddleware,
-  wrapLanguageModel,
-} from "ai";
+import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
 
 export const myProvider = isTestEnvironment
@@ -26,10 +22,7 @@ export const myProvider = isTestEnvironment
   : customProvider({
       languageModels: {
         "chat-model": google("gemini-3-pro-preview"),
-        "chat-model-reasoning": wrapLanguageModel({
-          model: google("gemini-2.0-flash-thinking-exp"),
-          middleware: extractReasoningMiddleware({ tagName: "think" }),
-        }),
+        "chat-model-reasoning": google("gemini-3-pro-preview"),
         "title-model": google("gemini-3-pro-preview"),
         "artifact-model": google("gemini-3-pro-preview"),
       },
